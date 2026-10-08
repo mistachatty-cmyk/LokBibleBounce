@@ -8,6 +8,7 @@ import { beginSession, finishSession, formatDuration, pauseSession, progressSumm
 import { loadState, saveState } from "./lib/storage";
 import type { AppState, BibleData, PassageRef, Translation } from "./types";
 import { BookMark } from "./components/BookMark";
+import { BouncePreview } from "./components/BouncePreview";
 import { Reader } from "./components/Reader";
 import { Reminders } from "./components/Reminders";
 import { SessionPanel } from "./components/SessionPanel";
@@ -222,7 +223,7 @@ export default function App() {
         {tab === "settings" ? <SettingsPanel translation={state.translation} reducedMotion={state.reducedMotion} bounceEnabled={state.bounceEnabled} accountEmail={user?.email ?? null} accountLoading={accountLoading} accountMessage={accountMessage} syncMessage={syncMessage} onTranslation={changeTranslation} onReducedMotion={(reducedMotion) => setState((current) => ({ ...current, reducedMotion }))} onBounceEnabled={(bounceEnabled) => { setState((current) => ({ ...current, bounceEnabled })); if (!bounceEnabled) void hideBounce(); }} onSignIn={async (email) => { await sendSignInLink(email); setAccountMessage("Check your email for a sign-in link, then return to LokBounce."); }} onSignOut={async () => { await signOut(); setAccountMessage("Signed out. Your local reminders remain available."); }} /> : null}
       </main>
 
-      {browserPreview ? <div className="browser-bounce-preview"><button className="preview-book-button" type="button" onClick={openRandomVerse} aria-label="Open the bouncing Bible"><BookMark translation={state.translation} size="small" /></button><button className="preview-dismiss" type="button" onClick={() => setBrowserPreview(false)}>Dismiss preview</button></div> : null}
+      {browserPreview ? <BouncePreview translation={state.translation} reducedMotion={state.reducedMotion} onOpen={openRandomVerse} onDismiss={() => setBrowserPreview(false)} /> : null}
     </div>
   );
 }

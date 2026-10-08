@@ -70,8 +70,8 @@ impl Runtime {
             fired: HashSet::new(),
             x: 0.0,
             y: 0.0,
-            vx: 2.5,
-            vy: 1.9,
+            vx: 92.0,
+            vy: 68.0,
             bounds: (0.0, 0.0, 1000.0, 700.0),
         }
     }
@@ -141,6 +141,8 @@ fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), Stri
     state.bounds = (left, top, right.max(left), bottom.max(top));
     state.x = (left + 24.0).min(state.bounds.2);
     state.y = (top + 30.0).min(state.bounds.3);
+    state.vx = 92.0 * scale;
+    state.vy = 68.0 * scale;
     state.active = Some(ActiveBounce {
         reminder_id,
         started: Instant::now(),
@@ -285,8 +287,26 @@ fn secure_remove(key: String) -> Result<(), String> {
     }
 }
 
+fn advance_axis(position: &mut f64, velocity: &mut f64, min: f64, max: f64, seconds: f64) {
+    if max <= min {
+        *position = min;
+        return;
+    }
+    *position += *velocity * seconds;
+    if *position <= min {
+        *position = min + (min - *position);
+        *velocity = (*velocity).abs();
+    }
+    if *position >= max {
+        *position = max - (*position - max);
+        *velocity = -(*velocity).abs();
+    }
+    *position = (*position).clamp(min, max);
+}
+
 fn scheduler(app: AppHandle) {
     thread::spawn(move || {
+        let mut last_frame = Instant::now();
         loop {
             let moving = app
                 .state::<Shared>()
@@ -295,10 +315,14 @@ fn scheduler(app: AppHandle) {
                 .map(|state| state.active.is_some())
                 .unwrap_or(false);
             thread::sleep(if moving {
-                Duration::from_millis(30)
+                Duration::from_millis(16)
             } else {
                 Duration::from_secs(1)
             });
+            let frame_time = Instant::now();
+            // Resuming after a long pause should not teleport the book.
+            let seconds = frame_time.duration_since(last_frame).as_secs_f64().min(0.05);
+            last_frame = frame_time;
             let shared = app.state::<Shared>();
             let now = Local::now();
             let mut trigger: Option<Option<String>> = None;
@@ -342,16 +366,11 @@ fn scheduler(app: AppHandle) {
                         expire = true;
                     } else {
                         let (left, top, right, bottom) = state.bounds;
-                        state.x += state.vx;
-                        state.y += state.vy;
-                        if state.x <= left || state.x >= right {
-                            state.vx = -state.vx;
-                            state.x = state.x.clamp(left, right);
-                        }
-                        if state.y <= top || state.y >= bottom {
-                            state.vy = -state.vy;
-                            state.y = state.y.clamp(top, bottom);
-                        }
+                        let (mut x, mut vx) = (state.x, state.vx);
+                        let (mut y, mut vy) = (state.y, state.vy);
+                        advance_axis(&mut x, &mut vx, left, right, seconds);
+                        advance_axis(&mut y, &mut vy, top, bottom, seconds);
+                        (state.x, state.vx, state.y, state.vy) = (x, vx, y, vy);
                         position = Some(PhysicalPosition::new(
                             state.x.round() as i32,
                             state.y.round() as i32,
