@@ -112,6 +112,7 @@ The user clarified that LokBounce must remain Bible-focused. Shared login belong
 | C-02 | Support small reading groups or church study spaces. | Suggested | Plan moderation, roles, privacy, and cost before launching. |
 | C-03 | Add private prayer/reflection journaling adjacent to reading. | Suggested | Treat entries as highly sensitive and keep them separate from public features. |
 | C-04 | Explore an optional study assistant that cites the passage and distinguishes commentary from Bible text. | Suggested | Verify accuracy, theological neutrality, privacy, and ongoing model cost. Never present generated text as Scripture. |
+| C-05 | Add a discoverable easter egg pop-up with curated links to worthwhile videos and audio to listen to. Start with links that open the original source; consider richer media features later. | User | Choose the hidden trigger and curate sources for relevance, quality, accessibility, and rights. Keep the pop-up optional, quiet, and free of autoplay. |
 
 ## Distribution, accessibility, and trust
 
