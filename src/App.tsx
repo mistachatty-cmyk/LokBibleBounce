@@ -4,7 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import { accountClient, installDesktopAuthCallback, sendSignInLink, signOut, syncReadingSessions } from "./lib/account";
 import { loadBible, randomReference, verseText } from "./lib/bible";
 import { desktop, hideBounce, showBounce, syncBounceEnabled, syncReminders } from "./lib/native";
-import { beginSession, finishSession, pauseSession, progressSummary, resumeSession, tickSession } from "./lib/sessions";
+import { beginSession, finishSession, formatDuration, pauseSession, progressSummary, resumeSession, tickSession } from "./lib/sessions";
 import { loadState, saveState } from "./lib/storage";
 import type { AppState, BibleData, PassageRef, Translation } from "./types";
 import { BookMark } from "./components/BookMark";
@@ -175,6 +175,10 @@ export default function App() {
   }
 
   async function previewBounce() {
+    if (!state.bounceEnabled) {
+      setNotice("Turn on bouncing in Settings to preview the book.");
+      return;
+    }
     if (desktop) {
       try { await showBounce(); } catch (error) { setNotice(`Could not show the desktop bounce: ${String(error)}`); }
     } else setBrowserPreview(true);
@@ -205,7 +209,7 @@ export default function App() {
             <div className="home-grid">
               <button className="home-card" type="button" onClick={() => setTab("sessions")}><span className="card-icon gold">◷</span><span className="card-title">Settle in & read</span><span className="card-copy">Start a 5-minute pause or stay longer.</span><span className="card-arrow">↗</span></button>
               <button className="home-card" type="button" onClick={() => setTab("reminders")}><span className="card-icon sage">◉</span><span className="card-title">A gentle nudge</span><span className="card-copy">{upcoming ? `Next: ${upcoming}` : "Choose when the Bible comes to you."}</span><span className="card-arrow">↗</span></button>
-              <button className="home-card" type="button" onClick={() => setTab("progress")}><span className="card-icon rose">✦</span><span className="card-title">Your moments</span><span className="card-copy">{summary.totalSeconds ? `${Math.floor(summary.totalSeconds / 60)} minutes of reading saved.` : "Every moment has a beginning."}</span><span className="card-arrow">↗</span></button>
+              <button className="home-card" type="button" onClick={() => setTab("progress")}><span className="card-icon rose">✦</span><span className="card-title">Your moments</span><span className="card-copy">{summary.totalSeconds ? `${formatDuration(summary.totalSeconds)} of reading saved.` : "Every moment has a beginning."}</span><span className="card-arrow">↗</span></button>
             </div>
             <div className="home-footnote"><span>READ AT YOUR OWN PACE</span><p>No pressure. No perfect streak required. Just an open invitation to spend time in Scripture.</p></div>
           </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beginSession, finishSession, pauseSession, resumeSession, tickSession } from "./sessions";
+import { beginSession, finishSession, formatDuration, pauseSession, resumeSession, tickSession } from "./sessions";
 
 describe("reading time", () => {
   it("counts active intervals and excludes pauses", () => {
@@ -18,5 +18,10 @@ describe("reading time", () => {
     const afterSleep = tickSession(session, 1_600_000);
     expect(afterSleep.running).toBe(false);
     expect(afterSleep.activeSeconds).toBe(0);
+  });
+
+  it("reports short reading moments without rounding them into a minute", () => {
+    expect(formatDuration(2)).toBe("2 sec");
+    expect(formatDuration(62)).toBe("1 min 2 sec");
   });
 });

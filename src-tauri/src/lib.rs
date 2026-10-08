@@ -1,4 +1,4 @@
-use chrono::{Datelike, Local, Timelike};
+use chrono::{Datelike, Local, NaiveTime};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
@@ -13,6 +13,8 @@ use tauri::{
     tray::TrayIconBuilder,
 };
 use tauri_plugin_autostart::MacosLauncher;
+#[cfg(debug_assertions)]
+use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_notification::NotificationExt;
 
 const BOOK_WIDTH: f64 = 170.0;
@@ -105,6 +107,16 @@ fn book_window(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
 }
 
 fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), String> {
+    if !app
+        .state::<Shared>()
+        .0
+        .lock()
+        .map_err(|_| "Overlay state is unavailable")?
+        .saved
+        .bounce_enabled
+    {
+        return Err("Bouncing is turned off".into());
+    }
     let window = book_window(app)?;
     let monitor = app
         .get_webview_window("main")
@@ -276,7 +288,17 @@ fn secure_remove(key: String) -> Result<(), String> {
 fn scheduler(app: AppHandle) {
     thread::spawn(move || {
         loop {
-            thread::sleep(Duration::from_millis(30));
+            let moving = app
+                .state::<Shared>()
+                .0
+                .lock()
+                .map(|state| state.active.is_some())
+                .unwrap_or(false);
+            thread::sleep(if moving {
+                Duration::from_millis(30)
+            } else {
+                Duration::from_secs(1)
+            });
             let shared = app.state::<Shared>();
             let now = Local::now();
             let mut trigger: Option<Option<String>> = None;
@@ -299,9 +321,13 @@ fn scheduler(app: AppHandle) {
                             {
                                 continue;
                             }
-                            let time = format!("{:02}:{:02}", now.hour(), now.minute());
+                            let Ok(time) = NaiveTime::parse_from_str(&reminder.time, "%H:%M")
+                            else {
+                                continue;
+                            };
+                            let delay = now.time().signed_duration_since(time).num_seconds();
                             let key = format!("{}:{}", now.date_naive(), reminder.id);
-                            if reminder.time == time && !state.fired.contains(&key) {
+                            if (0..120).contains(&delay) && !state.fired.contains(&key) {
                                 trigger = Some(Some(reminder.id.clone()));
                                 state.fired.insert(key);
                                 break;
@@ -351,7 +377,14 @@ fn scheduler(app: AppHandle) {
                     .show();
             }
             if let Some(id) = trigger {
-                let _ = start_bounce(&app, id);
+                if start_bounce(&app, id).is_err() {
+                    let _ = app
+                        .notification()
+                        .builder()
+                        .title("A moment in the Word")
+                        .body("It's time for your Bible reading moment.")
+                        .show();
+                }
             }
         }
     });
@@ -385,6 +418,8 @@ pub fn run() {
             secure_remove
         ])
         .setup(|app| {
+            #[cfg(debug_assertions)]
+            app.deep_link().register_all()?;
             let saved = load_settings(app.handle());
             app.manage(Shared(Mutex::new(Runtime::new(saved))));
             let open = MenuItem::with_id(app, "open", "Open LokBibleBounce", true, None::<&str>)?;

@@ -35,5 +35,7 @@ Guest reading and reminders need no account. Lok account sign-in uses the shared
 - [Post-MVP ideas](docs/POST_MVP_IDEAS.md) — retained ideas from the conversation and additional possibilities. **This is the place to add anything deferred.**
 - [Research notes](docs/RESEARCH_NOTES.md) — evaluated tools, costs, source material, and the earlier Gemini proposal.
 - [Implementation notes](docs/IMPLEMENTATION.md) — current architecture, build and verification status, and remaining release checks.
+- [Bible content provenance](docs/CONTENT_PROVENANCE.md) — source editions, reproducible checksums, and release review notes.
+- [Lok ecosystem integration](docs/ECOSYSTEM_INTEGRATION.md) — identity and a future versioned event shape for optional cross-app features.
 
 The guiding rule is simple: LokBounce is a Bible companion first. Other Lok features can connect later when they support that purpose.

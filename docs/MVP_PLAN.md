@@ -16,7 +16,7 @@ The full set of deferred requests and suggestions lives in [POST_MVP_IDEAS.md](P
 1. **First launch:** Choose WEB or KJV, optionally sign in with a Lok account, and optionally enable launch at startup and notifications. The app remains usable offline as a guest.
 2. **Bounce:** A compact transparent book moves around the display containing the active app and reverses at display edges. It stays above ordinary desktop windows without blocking input outside its small footprint. Settings include a way to show, hide, or pause the bounce.
 3. **Open:** Clicking the book stops the bounce and opens a readable verse view. The book opens with a short, restrained animation. A reference opens the full chapter in the app and highlights the selected verse. Reduced-motion settings remove the animation.
-4. **Reminders:** Users choose a local time and days of the week. A due reminder bounces until opened, snoozed, or dismissed; after two minutes of no interaction it becomes a quiet pending reminder and Windows notification. Snooze defaults to ten minutes. A notification is also the fallback when an overlay cannot appear.
+4. **Reminders:** Users choose a local time and days of the week. A due reminder bounces until opened, snoozed, or dismissed; after two minutes of no interaction it closes and sends a quiet Windows notification. Snooze defaults to ten minutes. A notification is also the fallback when an overlay cannot appear.
 5. **Sessions:** Presets are 5, 10, 20, 30, 45, 60, 90, 120, and 180 minutes; custom goals accept 1–720 minutes. The timer counts only while active. Users can pause and resume while reading in the app, another app, or a physical Bible. On restart, an interrupted session returns paused. Each completed session saves its active duration; the app shows session history, lifetime reading time, completed sessions, and a simple streak.
 6. **Customization:** WEB and KJV have distinct, respectful cover treatments. The inner reader stays consistent and legible. Translation choice controls both text and cover.
 
@@ -26,7 +26,7 @@ The full set of deferred requests and suggestions lives in [POST_MVP_IDEAS.md](P
 - Bundle the two Bible texts locally from documented source editions. Normalize stable book, chapter, and verse IDs. Select random verses locally; no per-click network request or paid Bible API is needed.
 - Keep schedules and guest progress in local app data. The tray process handles reminders while the reader is closed, recalculates after sleep/resume and clock changes, and avoids duplicate firing.
 - Reuse the **same Supabase Auth project and user ID as LokBook**. Use the existing email magic-link template with a LokBounce desktop callback; do not change the shared email template. Sync reading sessions and chosen preferences on sign-in with stable session IDs and user-owned row-level policies. Reminder schedules stay device-local in this release. Store refresh credentials separately from ordinary settings; never ship a service-role key.
-- Represent a completed session as a versioned domain event so future GSix/Lok adapters can consume it without changing the timer. There are no pet rewards or theological scores in the MVP.
+- Give completed sessions stable IDs and fields that can map to a [versioned domain event](ECOSYSTEM_INTEGRATION.md) when future GSix/Lok adapters are defined. There are no pet rewards or theological scores in the MVP.
 
 ## Acceptance checks
 

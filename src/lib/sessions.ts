@@ -2,6 +2,17 @@ import type { ActiveSession, AppState, ReadingSession, Translation } from "../ty
 
 export const SESSION_PRESETS = [5, 10, 20, 30, 45, 60, 90, 120, 180] as const;
 
+export function formatDuration(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds));
+  if (whole < 60) return `${whole} sec`;
+  const minutes = Math.floor(whole / 60);
+  const remaining = whole % 60;
+  if (minutes < 60) return `${minutes} min${remaining ? ` ${remaining} sec` : ""}`;
+  const hours = Math.floor(minutes / 60);
+  const leftover = minutes % 60;
+  return `${hours} hr${leftover ? ` ${leftover} min` : ""}`;
+}
+
 export function beginSession(minutes: number, translation: Translation, now = Date.now()): ActiveSession {
   if (!Number.isInteger(minutes) || minutes < 1 || minutes > 720) {
     throw new Error("Choose a reading goal between 1 and 720 minutes.");

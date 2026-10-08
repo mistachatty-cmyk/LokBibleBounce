@@ -26,5 +26,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: LokBibleBounce-Windows-installer
-          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/lokbiblebounce.exe
           if-no-files-found: error
