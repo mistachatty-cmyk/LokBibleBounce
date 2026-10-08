@@ -1,6 +1,6 @@
 # LokBibleBounce MVP plan
 
-**Status:** Proposed build specification; no application features are implemented yet.
+**Status:** MVP specification. Implementation is underway; see [implementation notes](IMPLEMENTATION.md) for verified progress and remaining checks.
 
 **Product name:** LokBibleBounce; short name: LokBounce.
 **First platform:** Windows desktop.

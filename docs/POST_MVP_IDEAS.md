@@ -118,7 +118,7 @@ The user clarified that LokBounce must remain Bible-focused. Shared login belong
 
 | Link | Supplied by | Notes |
 | --- | --- | --- |
-| [“Into Your Hands I Commit My Spirit” – Psalms of Surrender](https://www.youtube.com/watch?v=4rHDuAcuOuU) by Godseekers | User | Fun note: check out the prayer at [13:00](https://www.youtube.com/watch?v=4rHDuAcuOuU&t=780s) ❤️. First link for the future easter egg; verify availability and suitability again before release. |
+| [“Into Your Hands I Commit My Spirit” – Psalms of Surrender](https://www.youtube.com/watch?v=4rHDuAcuOuU) by Godseekers | User | Fun note: check out the prayer at [13:00](https://www.youtube.com/watch?v=4rHDuAcuOuU&t=780s) ❤️. User note for [30:00](https://www.youtube.com/watch?v=4rHDuAcuOuU&t=1800s): a point about having to fear God. First link for the future easter egg; verify availability and suitability again before release. |
 
 ## Distribution, accessibility, and trust
 
