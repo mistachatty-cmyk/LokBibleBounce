@@ -70,7 +70,11 @@ def build(translation: str, meta: dict[str, str | int], archive_dir: Path | None
         archive = (archive_dir / archive_name).read_bytes()
     else:
         request = urllib.request.Request(
-            str(meta["url"]), headers={"User-Agent": "LokBibleBounce Bible data importer/1.0"}
+            str(meta["url"]),
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "*/*",
+            },
         )
         with urllib.request.urlopen(request, timeout=30) as response:
             archive = response.read()

@@ -12,10 +12,11 @@
 - `npm run build` passes TypeScript and Vite production build.
 - `npm test` checks both offline corpora, John 3:16, random verse validity, active reading time, pause/resume, and long-gap behavior.
 - Generated icons and the Tauri configuration are present. A Windows CI job builds the installer and uploads it as an artifact.
+- The first Windows CI run compiled the native app and produced an NSIS installer. Later branch changes still require their own passing run.
 
 ## Release checks still required
 
-1. Confirm the Windows CI job completes a native compile and produces the NSIS installer.
+1. Confirm the latest Windows CI job completes a native compile and produces the NSIS installer.
 2. Install on Windows and exercise click accuracy, movement, multiple monitors/scaling, browser and ordinary app stacking, borderless games, tray close/quit, autostart, and sleep/resume.
 3. Check daily and weekday reminders around restart, daylight saving, snooze, and system clock changes. Verify the notification fallback on an exclusive-fullscreen test case.
 4. Review and apply the Supabase migration to the existing LokBook project, allow `lokbounce://auth/callback` as an Auth redirect, then test guest merge, sign-out, and cross-account RLS denial.
