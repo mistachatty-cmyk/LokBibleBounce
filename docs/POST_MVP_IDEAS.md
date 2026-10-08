@@ -114,6 +114,12 @@ The user clarified that LokBounce must remain Bible-focused. Shared login belong
 | C-04 | Explore an optional study assistant that cites the passage and distinguishes commentary from Bible text. | Suggested | Verify accuracy, theological neutrality, privacy, and ongoing model cost. Never present generated text as Scripture. |
 | C-05 | Add a discoverable easter egg pop-up with curated links to worthwhile videos and audio to listen to. Start with links that open the original source; consider richer media features later. | User | Choose the hidden trigger and curate sources for relevance, quality, accessibility, and rights. Keep the pop-up optional, quiet, and free of autoplay. |
 
+### C-05 seed links
+
+| Link | Supplied by | Notes |
+| --- | --- | --- |
+| [“Into Your Hands I Commit My Spirit” – Psalms of Surrender](https://www.youtube.com/watch?v=4rHDuAcuOuU) by Godseekers | User | First link for the future easter egg. Open on YouTube; verify availability and suitability again before release. |
+
 ## Distribution, accessibility, and trust
 
 | ID | Idea | Origin | What must be resolved before building |
