@@ -30,3 +30,11 @@ export async function snoozeReminder(): Promise<void> {
 export async function dismissReminder(): Promise<void> {
   if (desktop) await invoke("dismiss_reminder");
 }
+
+export async function isReminderBounce(): Promise<boolean> {
+  return desktop ? invoke<boolean>("is_reminder_bounce") : false;
+}
+
+export async function setBounceHovered(hovered: boolean): Promise<void> {
+  if (desktop) await invoke("set_bounce_hovered", { hovered });
+}

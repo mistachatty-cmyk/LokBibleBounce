@@ -60,9 +60,9 @@ export function SettingsPanel(props: SettingsPanelProps) {
         <div className="panel settings-panel">
           <h3>Reading & appearance</h3>
           <label className="settings-row"><span><strong>Bible translation</strong><small>Cover and text change together</small></span><select value={props.translation} onChange={(event) => props.onTranslation(event.target.value as Translation)}><option value="web">World English Bible</option><option value="kjv">King James Version</option></select></label>
-          <label className="settings-row"><span><strong>Allow bouncing</strong><small>Show the book when invited or reminded</small></span><input type="checkbox" checked={props.bounceEnabled} onChange={(event) => props.onBounceEnabled(event.target.checked)} /></label>
+          <label className="settings-row"><span><strong>Passive desktop bounce</strong><small>Keep the Bible moving while LokBounce is running</small></span><input type="checkbox" checked={props.bounceEnabled} onChange={(event) => props.onBounceEnabled(event.target.checked)} /></label>
           <label className="settings-row"><span><strong>Reduce motion</strong><small>Use still transitions where possible</small></span><input type="checkbox" checked={props.reducedMotion} onChange={(event) => props.onReducedMotion(event.target.checked)} /></label>
-          {desktop ? <label className="settings-row"><span><strong>Launch with Windows</strong><small>Keep scheduled reminders ready</small></span><input type="checkbox" checked={autostart} onChange={(event) => void toggleAutostart(event.target.checked)} /></label> : null}
+          {desktop ? <label className="settings-row"><span><strong>Launch with Windows</strong><small>Start the Bible bounce when you sign in</small></span><input type="checkbox" checked={autostart} onChange={(event) => void toggleAutostart(event.target.checked)} /></label> : null}
         </div>
         <div className="panel settings-panel">
           <h3>Lok account</h3>

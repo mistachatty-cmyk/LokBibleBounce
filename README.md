@@ -6,13 +6,15 @@
 
 ## Current MVP scope
 
-- Windows desktop app with a bouncing Bible on the active display, over ordinary apps, browsers, and compatible borderless/windowed games.
+- Windows desktop app that launches as a single bouncing Bible on the active display, over ordinary apps, browsers, and compatible borderless/windowed games. Click the book to open the reader; close the reader to return to the passive bounce.
 - Offline World English Bible (WEB) and King James Version (KJV), with a random verse, full chapter view, and a cover that follows the chosen translation.
 - Daily or selected-weekday reminders with open, snooze, and dismiss actions.
 - Reading timers from 5 minutes to 3 hours, plus a custom goal; pause/resume, saved session history, lifetime reading time, and a simple streak.
 - Optional login using the existing LokBook Supabase identity; the Bible, reminders, and guest progress work offline.
 
 The overlay may not appear over a genuine exclusive-fullscreen game. That remains an explicit future goal, with a notification fallback for the first release.
+
+The desktop bounce runs while LokBounce is open, including when its reader is hidden in the tray. Use the tray menu to pause or resume it. **Launch with Windows** is optional in Settings. This is a desktop overlay, not a Windows idle `.scr` screensaver or lock-screen app; a separate idle screensaver mode is recorded in [post-MVP ideas](docs/POST_MVP_IDEAS.md).
 
 ## Run locally
 
@@ -35,6 +37,7 @@ Guest reading and reminders need no account. Lok account sign-in uses the shared
 - [Post-MVP ideas](docs/POST_MVP_IDEAS.md) — retained ideas from the conversation and additional possibilities. **This is the place to add anything deferred.**
 - [Research notes](docs/RESEARCH_NOTES.md) — evaluated tools, costs, source material, and the earlier Gemini proposal.
 - [Implementation notes](docs/IMPLEMENTATION.md) — current architecture, build and verification status, and remaining release checks.
+- [Motion spec](docs/MOTION_SPEC.md) — bounce physics, edge reactions, opening animation, and Windows quality checks.
 - [Bible content provenance](docs/CONTENT_PROVENANCE.md) — source editions, reproducible checksums, and release review notes.
 - [Lok ecosystem integration](docs/ECOSYSTEM_INTEGRATION.md) — identity and a future versioned event shape for optional cross-app features.
 

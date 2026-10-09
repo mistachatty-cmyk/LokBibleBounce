@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { chapterVerses, findBook, formatReference, randomReference, verseText } from "../lib/bible";
 import type { BibleData, PassageRef, Translation } from "../types";
-import { BookMark } from "./BookMark";
 
 interface ReaderProps {
   bible: BibleData | null;
@@ -20,7 +19,7 @@ export function Reader({ bible, translation, reference, onReference, onTranslati
   useEffect(() => {
     setChapterOpen(false);
     setOpening(true);
-    const timeout = window.setTimeout(() => setOpening(false), 550);
+    const timeout = window.setTimeout(() => setOpening(false), 850);
     return () => window.clearTimeout(timeout);
   }, [reference?.book, reference?.chapter, reference?.verse, translation]);
 
@@ -36,6 +35,8 @@ export function Reader({ bible, translation, reference, onReference, onTranslati
   const book = findBook(bible, current.book);
   const text = verseText(bible, current);
   const verses = chapterVerses(bible, current);
+  const context = verses.filter(([number, verse]) => number < current.verse && verse.trim()).slice(-2);
+  const verseSize = (text?.length ?? 0) > 290 ? "very-long" : (text?.length ?? 0) > 160 ? "long" : "";
 
   function anotherVerse() {
     if (bible) onReference(randomReference(bible));
@@ -57,19 +58,36 @@ export function Reader({ bible, translation, reference, onReference, onTranslati
         </label>
       </div>
 
-      <div className={`reader-card ${opening ? "reader-opening" : ""}`}>
-        <div className="reader-cover"><BookMark translation={translation} size="small" open={opening} /></div>
-        <div className="reader-content">
-          <p className="reader-reference">{formatReference(bible, current)}</p>
-          <blockquote>{text || "This verse is not included in this edition."}</blockquote>
-          <p className="reader-translation">{bible.edition}</p>
-          <div className="button-row">
-            <button className="button button-primary" type="button" onClick={() => setChapterOpen((value) => !value)}>
-              {chapterOpen ? "Close chapter" : `Read ${book?.name ?? "the"} ${current.chapter}`}
-            </button>
-            <button className="button button-secondary" type="button" onClick={anotherVerse}>Another verse</button>
-            <button className="text-button" type="button" onClick={onStartSession}>Start a reading session</button>
+      <div className={`open-bible ${opening ? "opening" : ""}`} aria-label={`Open Bible at ${formatReference(bible, current)}`}>
+        <div className="book-leaf book-leaf-left">
+          <p className="book-page-overline">The Holy Bible</p>
+          <div className="book-page-rule" />
+          <h3>{book?.name}</h3>
+          <p className="book-chapter-label">Chapter {current.chapter}</p>
+          <div className="book-context">
+            {context.length ? context.map(([number, verse]) => <p key={number}><sup>{number}</sup> {verse}</p>) : <p>Pause here. Let this passage meet you where you are.</p>}
           </div>
+          <span className="book-page-number">{current.chapter}</span>
+        </div>
+        <div className="book-leaf book-leaf-right">
+          <p className="book-page-overline">{translation === "kjv" ? "King James Version" : "World English Bible"}</p>
+          <div className="book-page-rule" />
+          <div className={`book-verse-focus ${verseSize}`}>
+            <p className="reader-reference">{formatReference(bible, current)}</p>
+            <blockquote>{text || "This verse is not included in this edition."}</blockquote>
+          </div>
+          <span className="book-page-number">{current.verse}</span>
+        </div>
+        {opening ? <div className="book-opening-cover" aria-hidden="true"><span>✝</span><strong>HOLY<br />BIBLE</strong></div> : null}
+      </div>
+      <div className="reader-toolbar">
+        <div className="reader-edition">{bible.edition}</div>
+        <div className="button-row">
+          <button className="button button-primary" type="button" onClick={() => setChapterOpen((value) => !value)}>
+            {chapterOpen ? "Close chapter" : `Read ${book?.name ?? "the"} ${current.chapter}`}
+          </button>
+          <button className="button button-secondary" type="button" onClick={anotherVerse}>Another verse</button>
+          <button className="text-button" type="button" onClick={onStartSession}>Start a reading session</button>
         </div>
       </div>
 

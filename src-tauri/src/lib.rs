@@ -52,6 +52,7 @@ struct ActiveBounce {
 struct Runtime {
     saved: SavedSettings,
     active: Option<ActiveBounce>,
+    hovered: bool,
     snooze: Option<(String, Instant)>,
     fired: HashSet<String>,
     x: f64,
@@ -66,6 +67,7 @@ impl Runtime {
         Self {
             saved,
             active: None,
+            hovered: false,
             snooze: None,
             fired: HashSet::new(),
             x: 0.0,
@@ -143,25 +145,46 @@ fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), Stri
     state.y = (top + 30.0).min(state.bounds.3);
     state.vx = 92.0 * scale;
     state.vy = 68.0 * scale;
+    let is_reminder = reminder_id.is_some();
     state.active = Some(ActiveBounce {
         reminder_id,
         started: Instant::now(),
     });
+    state.hovered = false;
+    let position = PhysicalPosition::new(state.x as i32, state.y as i32);
+    drop(state);
     window
-        .set_position(PhysicalPosition::new(state.x as i32, state.y as i32))
+        .set_position(position)
         .map_err(|e| e.to_string())?;
     window.show().map_err(|e| e.to_string())?;
+    let _ = app.emit_to("overlay", "bounce-mode", is_reminder);
     Ok(())
 }
 
 fn stop_bounce(app: &AppHandle) -> Result<(), String> {
     let shared = app.state::<Shared>();
-    shared
+    let mut state = shared.0.lock().map_err(|_| "Overlay state is unavailable")?;
+    state.active = None;
+    state.hovered = false;
+    drop(state);
+    book_window(app)?.hide().map_err(|e| e.to_string())
+}
+
+fn resume_passive(app: &AppHandle) -> Result<(), String> {
+    let (enabled, active) = app
+        .state::<Shared>()
         .0
         .lock()
-        .map_err(|_| "Overlay state is unavailable")?
-        .active = None;
-    book_window(app)?.hide().map_err(|e| e.to_string())
+        .map(|state| (state.saved.bounce_enabled, state.active.is_some()))
+        .map_err(|_| "Overlay state is unavailable")?;
+    let reader_visible = app
+        .get_webview_window("main")
+        .and_then(|window| window.is_visible().ok())
+        .unwrap_or(false);
+    if enabled && !active && !reader_visible {
+        start_bounce(app, None)?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -172,6 +195,26 @@ fn show_bounce(app: AppHandle, reminder_id: Option<String>) -> Result<(), String
 #[tauri::command]
 fn hide_bounce(app: AppHandle) -> Result<(), String> {
     stop_bounce(&app)
+}
+
+#[tauri::command]
+fn is_reminder_bounce(app: AppHandle) -> bool {
+    app.state::<Shared>()
+        .0
+        .lock()
+        .ok()
+        .and_then(|state| state.active.as_ref().map(|active| active.reminder_id.is_some()))
+        .unwrap_or(false)
+}
+
+#[tauri::command]
+fn set_bounce_hovered(app: AppHandle, hovered: bool) -> Result<(), String> {
+    app.state::<Shared>()
+        .0
+        .lock()
+        .map_err(|_| "Overlay state is unavailable")?
+        .hovered = hovered;
+    Ok(())
 }
 
 #[tauri::command]
@@ -205,10 +248,12 @@ fn set_bounce_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
         state.saved.bounce_enabled = enabled;
         state.saved.clone()
     };
-    if !enabled {
-        let _ = stop_bounce(&app);
+    save_settings(&app, &saved)?;
+    if enabled {
+        resume_passive(&app)
+    } else {
+        stop_bounce(&app)
     }
-    save_settings(&app, &saved)
 }
 
 fn valid_time(time: &str) -> bool {
@@ -248,12 +293,14 @@ fn snooze_reminder(app: AppHandle) -> Result<(), String> {
             state.snooze = Some((id, Instant::now() + Duration::from_secs(10 * 60)));
         }
     }
-    stop_bounce(&app)
+    stop_bounce(&app)?;
+    resume_passive(&app)
 }
 
 #[tauri::command]
 fn dismiss_reminder(app: AppHandle) -> Result<(), String> {
-    stop_bounce(&app)
+    stop_bounce(&app)?;
+    resume_passive(&app)
 }
 
 fn credential(key: &str) -> Result<keyring::Entry, String> {
@@ -287,26 +334,31 @@ fn secure_remove(key: String) -> Result<(), String> {
     }
 }
 
-fn advance_axis(position: &mut f64, velocity: &mut f64, min: f64, max: f64, seconds: f64) {
+fn advance_axis(position: &mut f64, velocity: &mut f64, min: f64, max: f64, seconds: f64) -> bool {
     if max <= min {
         *position = min;
-        return;
+        return false;
     }
     *position += *velocity * seconds;
+    let mut impact = false;
     if *position <= min {
         *position = min + (min - *position);
         *velocity = (*velocity).abs();
+        impact = true;
     }
     if *position >= max {
         *position = max - (*position - max);
         *velocity = -(*velocity).abs();
+        impact = true;
     }
     *position = (*position).clamp(min, max);
+    impact
 }
 
 fn scheduler(app: AppHandle) {
     thread::spawn(move || {
         let mut last_frame = Instant::now();
+        let mut last_schedule_check = Instant::now() - Duration::from_secs(1);
         loop {
             let moving = app
                 .state::<Shared>()
@@ -323,13 +375,19 @@ fn scheduler(app: AppHandle) {
             // Resuming after a long pause should not teleport the book.
             let seconds = frame_time.duration_since(last_frame).as_secs_f64().min(0.05);
             last_frame = frame_time;
+            let check_schedules = frame_time.duration_since(last_schedule_check) >= Duration::from_secs(1);
+            if check_schedules {
+                last_schedule_check = frame_time;
+            }
             let shared = app.state::<Shared>();
             let now = Local::now();
             let mut trigger: Option<Option<String>> = None;
             let mut expire = false;
             let mut position = None;
+            let mut impact = None;
             if let Ok(mut state) = shared.0.lock() {
-                if state.saved.bounce_enabled && state.active.is_none() {
+                let can_trigger = state.active.as_ref().is_none_or(|active| active.reminder_id.is_none());
+                if state.saved.bounce_enabled && can_trigger && check_schedules {
                     if let Some((id, due)) = &state.snooze {
                         if Instant::now() >= *due {
                             trigger = Some(Some(id.clone()));
@@ -364,13 +422,19 @@ fn scheduler(app: AppHandle) {
                         && active.started.elapsed() >= Duration::from_secs(120)
                     {
                         expire = true;
-                    } else {
+                    } else if !state.hovered {
                         let (left, top, right, bottom) = state.bounds;
                         let (mut x, mut vx) = (state.x, state.vx);
                         let (mut y, mut vy) = (state.y, state.vy);
-                        advance_axis(&mut x, &mut vx, left, right, seconds);
-                        advance_axis(&mut y, &mut vy, top, bottom, seconds);
+                        let horizontal = advance_axis(&mut x, &mut vx, left, right, seconds);
+                        let vertical = advance_axis(&mut y, &mut vy, top, bottom, seconds);
                         (state.x, state.vx, state.y, state.vy) = (x, vx, y, vy);
+                        impact = match (horizontal, vertical) {
+                            (true, true) => Some("corner"),
+                            (true, false) => Some("horizontal"),
+                            (false, true) => Some("vertical"),
+                            _ => None,
+                        };
                         position = Some(PhysicalPosition::new(
                             state.x.round() as i32,
                             state.y.round() as i32,
@@ -386,8 +450,12 @@ fn scheduler(app: AppHandle) {
                     let _ = window.set_position(pos);
                 }
             }
+            if let Some(edge) = impact {
+                let _ = app.emit_to("overlay", "bounce-impact", edge);
+            }
             if expire {
                 let _ = stop_bounce(&app);
+                let _ = resume_passive(&app);
                 let _ = app
                     .notification()
                     .builder()
@@ -427,6 +495,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             show_bounce,
             hide_bounce,
+            is_reminder_bounce,
+            set_bounce_hovered,
             set_reminders,
             set_bounce_enabled,
             open_from_overlay,
@@ -442,8 +512,10 @@ pub fn run() {
             let saved = load_settings(app.handle());
             app.manage(Shared(Mutex::new(Runtime::new(saved))));
             let open = MenuItem::with_id(app, "open", "Open LokBibleBounce", true, None::<&str>)?;
+            let pause = MenuItem::with_id(app, "pause", "Pause bouncing", true, None::<&str>)?;
+            let resume = MenuItem::with_id(app, "resume", "Resume bouncing", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open, &quit])?;
+            let menu = Menu::with_items(app, &[&open, &pause, &resume, &quit])?;
             TrayIconBuilder::new()
                 .icon(
                     app.default_window_icon()
@@ -453,21 +525,30 @@ pub fn run() {
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "open" => {
+                        let _ = stop_bounce(app);
                         if let Some(main) = app.get_webview_window("main") {
                             let _ = main.show();
                             let _ = main.set_focus();
                         }
                     }
+                    "pause" => { let _ = set_bounce_enabled(app.clone(), false); }
+                    "resume" => { let _ = set_bounce_enabled(app.clone(), true); }
                     "quit" => app.exit(0),
                     _ => {}
                 })
                 .build(app)?;
-            if std::env::args().any(|arg| arg == "--quiet") {
+            scheduler(app.handle().clone());
+            let bounce_enabled = app
+                .state::<Shared>()
+                .0
+                .lock()
+                .map(|state| state.saved.bounce_enabled)
+                .unwrap_or(false);
+            if !bounce_enabled || resume_passive(app.handle()).is_err() {
                 if let Some(main) = app.get_webview_window("main") {
-                    let _ = main.hide();
+                    let _ = main.show();
                 }
             }
-            scheduler(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -475,9 +556,39 @@ pub fn run() {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();
+                    let _ = resume_passive(&window.app_handle());
                 }
             }
         })
         .run(tauri::generate_context!())
         .expect("error while running LokBibleBounce");
+}
+
+#[cfg(test)]
+mod motion_tests {
+    use super::advance_axis;
+
+    #[test]
+    fn reflects_at_both_edges_without_sticking() {
+        let (mut x, mut velocity) = (99.0, 92.0);
+        assert!(advance_axis(&mut x, &mut velocity, 0.0, 100.0, 0.05));
+        assert!((x - 96.4).abs() < 1e-9);
+        assert_eq!(velocity, -92.0);
+
+        let (mut x, mut velocity) = (1.0, -68.0);
+        assert!(advance_axis(&mut x, &mut velocity, 0.0, 100.0, 0.05));
+        assert!((x - 2.4).abs() < 1e-9);
+        assert_eq!(velocity, 68.0);
+    }
+
+    #[test]
+    fn distance_depends_on_elapsed_time_and_small_displays_stay_bounded() {
+        let (mut x, mut velocity) = (10.0, 92.0);
+        assert!(!advance_axis(&mut x, &mut velocity, 0.0, 100.0, 0.016));
+        assert!(!advance_axis(&mut x, &mut velocity, 0.0, 100.0, 0.032));
+        assert!((x - 14.416).abs() < 1e-9);
+
+        assert!(!advance_axis(&mut x, &mut velocity, 5.0, 5.0, 0.05));
+        assert_eq!(x, 5.0);
+    }
 }

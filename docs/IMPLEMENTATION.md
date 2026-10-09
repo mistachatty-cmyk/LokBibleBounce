@@ -2,9 +2,9 @@
 
 ## Architecture
 
-- Tauri 2 owns a normal reading window, a 170 × 170 transparent always-on-top book window, a tray menu, and a Rust reminder loop. Moving only the book window keeps other apps clickable outside its footprint.
+- Tauri 2 owns a reading window that starts hidden, a 170 × 170 transparent always-on-top book window that starts bouncing, a tray menu with pause/resume, and a Rust reminder loop. Clicking the book shows the reader; closing it resumes the passive bounce. Moving only the book window keeps other apps clickable outside its footprint.
 - The reminder loop reads device-local schedules from app data at startup, deduplicates each reminder per local calendar day, supports ten-minute snooze, and quiets a due bounce after two minutes with a Windows notification. Closing the reader hides it to the tray; launch at Windows startup is an opt-in setting.
-- React handles the offline WEB/KJV reader, chapter view, cover change, reminder editor, session timer, progress, and account UI. The Bible JSON comes from pinned eBible archives and is bundled in the installer. No verse request or paid API is needed at reading time.
+- React handles the offline WEB/KJV reader, two-page Bible spread, chapter view, cover change, reminder editor, session timer, progress, and account UI. The Bible JSON comes from pinned eBible archives and is bundled in the installer. No verse request or paid API is needed at reading time. The overlay pauses on book hover and briefly compresses/tilts when the native movement loop reports an edge impact.
 - Guest preferences and history use webview local storage. Reminders and the bounce-enabled flag are copied to native app data for the background scheduler. Supabase access tokens use Windows Credential Manager. Optional signed-in history sync targets a user-owned `lok_bible_sessions` table in the shared LokBook project.
 
 ## Verified so far
@@ -17,7 +17,7 @@
 ## Release checks still required
 
 1. Confirm the latest Windows CI job completes a native compile and produces the NSIS installer.
-2. Install on Windows and exercise click accuracy, movement, multiple monitors/scaling, browser and ordinary app stacking, borderless games, tray close/quit, autostart, and sleep/resume.
+2. Install on Windows and exercise first launch as book only, click-to-reader, close-to-bounce, click accuracy, edge reaction, movement, multiple monitors/scaling, browser and ordinary app stacking, borderless games, tray pause/resume/quit, autostart, and sleep/resume. Record frame pacing and idle resource use before claiming a polished motion experience.
 3. Check daily and weekday reminders around restart, daylight saving, snooze, and system clock changes. Verify the notification fallback on an exclusive-fullscreen test case.
 4. Review and apply the Supabase migration to the existing LokBook project, allow `lokbounce://auth/callback` as an Auth redirect, then test guest merge, sign-out, and cross-account RLS denial.
 5. Review the edition notices and release packaging. The KJV source is eBible's `eng-kjv` 1769 text, filtered to the 66-book canon. The WEB source is `engwebp`.

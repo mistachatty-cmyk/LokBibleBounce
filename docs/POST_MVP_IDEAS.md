@@ -26,6 +26,7 @@ The product rule remains: **help people read Scripture with respect, clarity, an
 | O-10 | Add per-app and per-game quiet rules, including presentation mode. | Suggested | Detect foreground apps locally without uploading app-use history. |
 | O-11 | Let users test a reminder and preview overlay placement from Settings. | Suggested | Keep the test from creating a real reading-session record. |
 | O-12 | Explore game-specific integrations where a conventional overlay cannot appear. | Suggested | Only use documented, allowed APIs; assess anti-cheat and maintenance cost. |
+| O-13 | Let the Bible react to desktop window edges or other user-chosen obstacles in addition to screen boundaries. | User | Detect obstacles locally without blocking other apps, jitter, unexpected movement, or collecting app-use history. |
 
 ## Scripture and reading
 
