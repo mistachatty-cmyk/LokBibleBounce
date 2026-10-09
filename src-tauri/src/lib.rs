@@ -544,10 +544,18 @@ pub fn run() {
                 .lock()
                 .map(|state| state.saved.bounce_enabled)
                 .unwrap_or(false);
-            if !bounce_enabled || resume_passive(app.handle()).is_err() {
-                if let Some(main) = app.get_webview_window("main") {
-                    let _ = main.show();
-                }
+            if bounce_enabled {
+                // Let the Windows webviews finish creating before showing and moving
+                // the transparent overlay. The reader stays available if this fails.
+                let handle = app.handle().clone();
+                thread::spawn(move || {
+                    thread::sleep(Duration::from_millis(350));
+                    if start_bounce(&handle, None).is_ok() {
+                        if let Some(main) = handle.get_webview_window("main") {
+                            let _ = main.hide();
+                        }
+                    }
+                });
             }
             Ok(())
         })
