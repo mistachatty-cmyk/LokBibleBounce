@@ -12,16 +12,6 @@
   "app": {
     "windows": [
       {
-        "label": "main",
-        "title": "LokBibleBounce",
-        "width": 1120,
-        "height": 760,
-        "minWidth": 790,
-        "minHeight": 540,
-        "resizable": true,
-        "fullscreen": false
-      },
-      {
         "label": "overlay",
         "url": "index.html#overlay",
         "width": 170,

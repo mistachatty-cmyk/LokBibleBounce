@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{
-    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition,
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, WebviewUrl, WebviewWindowBuilder,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
 };
@@ -338,16 +338,26 @@ fn valid_time(time: &str) -> bool {
         && parts[1].parse::<u32>().is_ok_and(|m| m < 60)
 }
 
+fn open_reader_window(app: &AppHandle) -> Result<(), String> {
+    if let Some(main) = app.get_webview_window("main") {
+        main.show().map_err(|e| e.to_string())?;
+        main.set_focus().map_err(|e| e.to_string())?;
+        let _ = app.emit_to("main", "open-reader", ());
+        return Ok(());
+    }
+    let main = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html#reader".into()))
+        .title("LokBibleBounce")
+        .inner_size(1120.0, 760.0)
+        .min_inner_size(790.0, 540.0)
+        .build()
+        .map_err(|e| e.to_string())?;
+    main.set_focus().map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn open_from_overlay(app: AppHandle) -> Result<(), String> {
     stop_bounce(&app)?;
-    let main = app
-        .get_webview_window("main")
-        .ok_or("Reading window is unavailable")?;
-    main.show().map_err(|e| e.to_string())?;
-    main.set_focus().map_err(|e| e.to_string())?;
-    app.emit_to("main", "open-reader", ())
-        .map_err(|e| e.to_string())
+    open_reader_window(&app)
 }
 
 #[tauri::command]
@@ -555,10 +565,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(Shared(Mutex::new(Runtime::new(SavedSettings::default()))))
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            if let Some(main) = app.get_webview_window("main") {
-                let _ = main.show();
-                let _ = main.set_focus();
-            }
+            let _ = open_reader_window(app);
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_notification::init())
@@ -606,10 +613,7 @@ pub fn run() {
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "open" => {
                         let _ = stop_bounce(app);
-                        if let Some(main) = app.get_webview_window("main") {
-                            let _ = main.show();
-                            let _ = main.set_focus();
-                        }
+                        let _ = open_reader_window(app);
                     }
                     "pause" => { let _ = rest_book(app); }
                     "resume" => { let _ = start_bounce(app, None); }
@@ -621,11 +625,7 @@ pub fn run() {
             let handle = app.handle().clone();
             thread::spawn(move || {
                 thread::sleep(Duration::from_millis(350));
-                if rest_book(&handle).is_ok() {
-                    if let Some(main) = handle.get_webview_window("main") {
-                        let _ = main.hide();
-                    }
-                }
+                let _ = rest_book(&handle);
             });
             Ok(())
         })
@@ -633,8 +633,10 @@ pub fn run() {
             if window.label() == "main" {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
+                    let handle = window.app_handle();
                     let _ = window.hide();
-                    let _ = resume_passive(&window.app_handle());
+                    let _ = window.destroy();
+                    let _ = resume_passive(&handle);
                 }
             }
         })

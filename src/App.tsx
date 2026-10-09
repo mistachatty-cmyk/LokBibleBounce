@@ -46,10 +46,10 @@ function nextReminder(reminders: AppState["reminders"]): string | null {
 
 export default function App() {
   const [state, setState] = useState<AppState>(loadState);
-  const [tab, setTab] = useState<Tab>("home");
+  const [tab, setTab] = useState<Tab>(() => window.location.hash === "#reader" ? "read" : "home");
   const [bible, setBible] = useState<BibleData | null>(null);
   const [bibleError, setBibleError] = useState("");
-  const [reference, setReference] = useState<PassageRef | null>(state.lastReference);
+  const [reference, setReference] = useState<PassageRef | null>(() => window.location.hash === "#reader" ? null : state.lastReference);
   const [browserPreview, setBrowserPreview] = useState(false);
   const [notice, setNotice] = useState("");
   const [user, setUser] = useState<User | null>(null);
