@@ -153,17 +153,18 @@ fn corner_position(bounds: (f64, f64, f64, f64), corner: RestCorner, inset: f64)
 
 fn rest_book(app: &AppHandle) -> Result<(), String> {
     let window = book_window(app)?;
-    let (mode, corner) = {
+    let (mode, corner, was_menu_open) = {
         let shared = app.state::<Shared>();
         let mut state = shared.0.lock().map_err(|_| "Overlay state is unavailable")?;
+        let was_menu_open = state.menu_open;
         state.active = None;
         state.hovered = false;
         state.menu_open = false;
-        (state.saved.rest_mode, state.saved.rest_corner)
+        (state.saved.rest_mode, state.saved.rest_corner, was_menu_open)
     };
     let _ = app.emit_to("overlay", "overlay-state", "rest");
     if mode == RestMode::Off { return window.hide().map_err(|e| e.to_string()); }
-    window.set_size(LogicalSize::new(BOOK_WIDTH, BOOK_HEIGHT)).map_err(|e| e.to_string())?;
+    if was_menu_open { window.set_size(LogicalSize::new(BOOK_WIDTH, BOOK_HEIGHT)).map_err(|e| e.to_string())?; }
     let (left, top, right, bottom, scale) = monitor_bounds(app, &window, BOOK_WIDTH, BOOK_HEIGHT)?;
     window.set_position(corner_position((left, top, right, bottom), corner, 16.0 * scale)).map_err(|e| e.to_string())?;
     window.show().map_err(|e| e.to_string())
@@ -171,7 +172,8 @@ fn rest_book(app: &AppHandle) -> Result<(), String> {
 
 fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), String> {
     let window = book_window(app)?;
-    window.set_size(LogicalSize::new(BOOK_WIDTH, BOOK_HEIGHT)).map_err(|e| e.to_string())?;
+    let was_menu_open = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?.menu_open;
+    if was_menu_open { window.set_size(LogicalSize::new(BOOK_WIDTH, BOOK_HEIGHT)).map_err(|e| e.to_string())?; }
     let (left, top, right, bottom, scale) = monitor_bounds(app, &window, BOOK_WIDTH, BOOK_HEIGHT)?;
     let shared = app.state::<Shared>();
     let mut state = shared
