@@ -18,7 +18,7 @@
 
 1. Confirm the latest Windows CI job completes a native compile and produces the NSIS installer.
 2. Install on Windows and exercise first launch as book only, book menu to reader, close-to-corner, click accuracy, edge reaction, movement, multiple monitors/scaling, browser and ordinary app stacking, borderless games, tray rest/bounce/quit, autostart, and sleep/resume. Record frame pacing and idle resource use before claiming a polished motion experience.
-   The current Codex host reports `0xC0000409` after launching both recent and older portable EXEs. CI compile/test success does not resolve this. Diagnose the native runtime on an ordinary Windows installation before releasing or promising stable desktop use.
+   Earlier portable EXEs aborted with Windows `0xC0000409`. Captured Rust stderr identified a webview command calling `state()` before `manage()`; the shared state is now registered in the Tauri builder before window creation. Verify the rebuilt EXE on Windows before releasing or promising stable desktop use.
 3. Check daily and weekday reminders around restart, daylight saving, snooze, and system clock changes. Verify the notification fallback on an exclusive-fullscreen test case.
 4. Review and apply the Supabase migration to the existing LokBook project, allow `lokbounce://auth/callback` as an Auth redirect, then test guest merge, sign-out, and cross-account RLS denial.
 5. Review the edition notices and release packaging. The KJV source is eBible's `eng-kjv` 1769 text, filtered to the 66-book canon. The WEB source is `engwebp`.

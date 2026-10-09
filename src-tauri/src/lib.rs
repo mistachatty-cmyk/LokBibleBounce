@@ -553,6 +553,7 @@ fn scheduler(app: AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(Shared(Mutex::new(Runtime::new(SavedSettings::default()))))
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(main) = app.get_webview_window("main") {
                 let _ = main.show();
@@ -585,7 +586,11 @@ pub fn run() {
             #[cfg(debug_assertions)]
             app.deep_link().register_all()?;
             let saved = load_settings(app.handle());
-            app.manage(Shared(Mutex::new(Runtime::new(saved))));
+            {
+                let shared = app.state::<Shared>();
+                let mut state = shared.0.lock().map_err(|_| std::io::Error::other("Overlay state is unavailable"))?;
+                *state = Runtime::new(saved);
+            }
             let open = MenuItem::with_id(app, "open", "Open LokBibleBounce", true, None::<&str>)?;
             let pause = MenuItem::with_id(app, "pause", "Rest in corner", true, None::<&str>)?;
             let resume = MenuItem::with_id(app, "resume", "Bounce now", true, None::<&str>)?;
