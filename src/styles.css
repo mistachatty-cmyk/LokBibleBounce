@@ -24,6 +24,15 @@
 .overlay-book-button.impact-horizontal .book-mark{animation:book-impact-horizontal .39s cubic-bezier(.2,.7,.2,1)}
 .overlay-book-button.impact-vertical .book-mark{animation:book-impact-vertical .39s cubic-bezier(.2,.7,.2,1)}
 .overlay-book-button.impact-corner .book-mark{animation:book-impact-corner .39s cubic-bezier(.2,.7,.2,1)}
+.overlay-stage.menu-open{width:270px;height:310px;display:flex;align-items:center;flex-direction:column;overflow:visible}
+.overlay-stage.menu-open .overlay-book-button{position:relative;inset:auto;width:110px;height:132px;padding:0;flex:none}
+.overlay-stage.menu-open .overlay-book-button .book-mark{width:85px;height:110px}
+.overlay-menu{width:238px;padding:12px;border-radius:16px;background:#fffdf5f5;box-shadow:0 12px 32px #122b2360;display:flex;flex-direction:column;gap:5px;color:#183b2e}
+.overlay-menu-heading{text-align:center;font:600 13px Georgia,serif;margin-bottom:4px}
+.overlay-menu button{border:1px solid #dfddcc;border-radius:8px;background:#fffdf8;color:#214532;padding:7px 9px;cursor:pointer;font-size:12px;text-align:left}
+.overlay-menu button:hover{background:#f4edda}
+.overlay-menu-reminder{display:flex;gap:5px}.overlay-menu-reminder button{flex:1;text-align:center}
+.overlay-moving-hint{position:absolute;bottom:0;left:18px;right:18px;text-align:center;font-size:10px;background:#fffdf2d9;color:#214532;border-radius:7px;padding:3px}
 @keyframes book-impact-horizontal{0%{transform:rotate(-8deg) scale(1)}22%{transform:rotate(-14deg) scaleX(.87) scaleY(1.06)}58%{transform:rotate(-5deg) scaleX(1.03) scaleY(.98)}100%{transform:rotate(-8deg) scale(1)}}
 @keyframes book-impact-vertical{0%{transform:rotate(-8deg) scale(1)}22%{transform:rotate(-5deg) scaleX(1.06) scaleY(.87)}58%{transform:rotate(-10deg) scaleX(.98) scaleY(1.03)}100%{transform:rotate(-8deg) scale(1)}}
 @keyframes book-impact-corner{0%{transform:rotate(-8deg) scale(1)}22%{transform:rotate(-17deg) scale(.9)}58%{transform:rotate(-3deg) scale(1.04)}100%{transform:rotate(-8deg) scale(1)}}

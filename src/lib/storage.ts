@@ -10,6 +10,8 @@ export const defaultState: AppState = {
   sessionOwnerId: null,
   activeSession: null,
   bounceEnabled: true,
+  restMode: "corner",
+  restCorner: "bottom-right",
   reducedMotion: false,
   lastReference: null,
 };
@@ -34,6 +36,8 @@ export function loadState(): AppState {
         ? { ...parsed.activeSession, running: false, lastTickAt: null }
         : null,
       bounceEnabled: parsed.bounceEnabled !== false,
+      restMode: parsed.restMode === "dashboard" || parsed.restMode === "off" ? parsed.restMode : "corner",
+      restCorner: parsed.restCorner === "top-left" || parsed.restCorner === "top-right" || parsed.restCorner === "bottom-left" ? parsed.restCorner : "bottom-right",
       reducedMotion: parsed.reducedMotion === true,
       lastReference: parsed.lastReference ?? null,
     };

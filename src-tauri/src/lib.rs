@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{
-    AppHandle, Emitter, Manager, PhysicalPosition, State,
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, State,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
 };
@@ -19,6 +19,16 @@ use tauri_plugin_notification::NotificationExt;
 
 const BOOK_WIDTH: f64 = 170.0;
 const BOOK_HEIGHT: f64 = 170.0;
+const MENU_WIDTH: f64 = 270.0;
+const MENU_HEIGHT: f64 = 310.0;
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+enum RestMode { Corner, Dashboard, Off }
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+enum RestCorner { TopLeft, TopRight, BottomLeft, BottomRight }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,14 +42,25 @@ struct Reminder {
 #[derive(Clone, Serialize, Deserialize)]
 struct SavedSettings {
     reminders: Vec<Reminder>,
+    #[serde(default = "default_true")]
     bounce_enabled: bool,
+    #[serde(default = "default_rest_mode")]
+    rest_mode: RestMode,
+    #[serde(default = "default_rest_corner")]
+    rest_corner: RestCorner,
 }
+
+fn default_true() -> bool { true }
+fn default_rest_mode() -> RestMode { RestMode::Corner }
+fn default_rest_corner() -> RestCorner { RestCorner::BottomRight }
 
 impl Default for SavedSettings {
     fn default() -> Self {
         Self {
             reminders: Vec::new(),
             bounce_enabled: true,
+            rest_mode: RestMode::Corner,
+            rest_corner: RestCorner::BottomRight,
         }
     }
 }
@@ -53,6 +74,7 @@ struct Runtime {
     saved: SavedSettings,
     active: Option<ActiveBounce>,
     hovered: bool,
+    menu_open: bool,
     snooze: Option<(String, Instant)>,
     fired: HashSet<String>,
     x: f64,
@@ -68,6 +90,7 @@ impl Runtime {
             saved,
             active: None,
             hovered: false,
+            menu_open: false,
             snooze: None,
             fired: HashSet::new(),
             x: 0.0,
@@ -108,33 +131,47 @@ fn book_window(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
         .ok_or_else(|| "Bible overlay is unavailable".into())
 }
 
-fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), String> {
-    if !app
-        .state::<Shared>()
-        .0
-        .lock()
-        .map_err(|_| "Overlay state is unavailable")?
-        .saved
-        .bounce_enabled
-    {
-        return Err("Bouncing is turned off".into());
-    }
-    let window = book_window(app)?;
-    let monitor = app
-        .get_webview_window("main")
-        .and_then(|main| main.current_monitor().ok().flatten())
+fn monitor_bounds(app: &AppHandle, window: &tauri::WebviewWindow, width: f64, height: f64) -> Result<(f64, f64, f64, f64, f64), String> {
+    let monitor = window.current_monitor().ok().flatten()
         .or_else(|| window.primary_monitor().ok().flatten())
         .ok_or_else(|| "No display was found".to_string())?;
     let scale = monitor.scale_factor();
     let origin = monitor.position();
     let size = monitor.size();
-    let width = BOOK_WIDTH * scale;
-    let height = BOOK_HEIGHT * scale;
-    let (left, top) = (origin.x as f64, origin.y as f64);
-    let (right, bottom) = (
-        left + size.width as f64 - width,
-        top + size.height as f64 - height,
-    );
+    let left = origin.x as f64;
+    let top = origin.y as f64;
+    let _ = app;
+    Ok((left, top, (left + size.width as f64 - width * scale).max(left), (top + size.height as f64 - height * scale).max(top), scale))
+}
+
+fn corner_position(bounds: (f64, f64, f64, f64), corner: RestCorner, inset: f64) -> PhysicalPosition<i32> {
+    let (left, top, right, bottom) = bounds;
+    let x = if matches!(corner, RestCorner::TopRight | RestCorner::BottomRight) { right - inset } else { left + inset };
+    let y = if matches!(corner, RestCorner::BottomLeft | RestCorner::BottomRight) { bottom - inset } else { top + inset };
+    PhysicalPosition::new(x.clamp(left, right).round() as i32, y.clamp(top, bottom).round() as i32)
+}
+
+fn rest_book(app: &AppHandle) -> Result<(), String> {
+    let window = book_window(app)?;
+    let (mode, corner) = {
+        let mut state = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?;
+        state.active = None;
+        state.hovered = false;
+        state.menu_open = false;
+        (state.saved.rest_mode, state.saved.rest_corner)
+    };
+    let _ = app.emit_to("overlay", "overlay-state", "rest");
+    if mode == RestMode::Off { return window.hide().map_err(|e| e.to_string()); }
+    window.set_size(LogicalSize::new(BOOK_WIDTH, BOOK_HEIGHT)).map_err(|e| e.to_string())?;
+    let (left, top, right, bottom, scale) = monitor_bounds(app, &window, BOOK_WIDTH, BOOK_HEIGHT)?;
+    window.set_position(corner_position((left, top, right, bottom), corner, 16.0 * scale)).map_err(|e| e.to_string())?;
+    window.show().map_err(|e| e.to_string())
+}
+
+fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), String> {
+    let window = book_window(app)?;
+    window.set_size(LogicalSize::new(BOOK_WIDTH, BOOK_HEIGHT)).map_err(|e| e.to_string())?;
+    let (left, top, right, bottom, scale) = monitor_bounds(app, &window, BOOK_WIDTH, BOOK_HEIGHT)?;
     let shared = app.state::<Shared>();
     let mut state = shared
         .0
@@ -151,6 +188,7 @@ fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), Stri
         started: Instant::now(),
     });
     state.hovered = false;
+    state.menu_open = false;
     let position = PhysicalPosition::new(state.x as i32, state.y as i32);
     drop(state);
     window
@@ -158,6 +196,7 @@ fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), Stri
         .map_err(|e| e.to_string())?;
     window.show().map_err(|e| e.to_string())?;
     let _ = app.emit_to("overlay", "bounce-mode", is_reminder);
+    let _ = app.emit_to("overlay", "overlay-state", "bounce");
     Ok(())
 }
 
@@ -171,18 +210,19 @@ fn stop_bounce(app: &AppHandle) -> Result<(), String> {
 }
 
 fn resume_passive(app: &AppHandle) -> Result<(), String> {
-    let (enabled, active) = app
+    let (mode, active) = app
         .state::<Shared>()
         .0
         .lock()
-        .map(|state| (state.saved.bounce_enabled, state.active.is_some()))
+        .map(|state| (state.saved.rest_mode, state.active.is_some()))
         .map_err(|_| "Overlay state is unavailable")?;
     let reader_visible = app
         .get_webview_window("main")
         .and_then(|window| window.is_visible().ok())
         .unwrap_or(false);
-    if enabled && !active && !reader_visible {
-        start_bounce(app, None)?;
+    if !active && !reader_visible {
+        if mode == RestMode::Off { book_window(app)?.hide().map_err(|e| e.to_string())?; }
+        else { rest_book(app)?; }
     }
     Ok(())
 }
@@ -249,11 +289,39 @@ fn set_bounce_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
         state.saved.clone()
     };
     save_settings(&app, &saved)?;
-    if enabled {
-        resume_passive(&app)
-    } else {
-        stop_bounce(&app)
-    }
+    if !enabled { stop_bounce(&app)?; resume_passive(&app) } else { resume_passive(&app) }
+}
+
+#[tauri::command]
+fn set_rest_preferences(app: AppHandle, mode: RestMode, corner: RestCorner) -> Result<(), String> {
+    let saved = {
+        let mut state = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?;
+        state.saved.rest_mode = mode;
+        state.saved.rest_corner = corner;
+        state.saved.clone()
+    };
+    save_settings(&app, &saved)?;
+    if mode == RestMode::Off {
+        if app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?.active.is_none() { rest_book(&app) } else { Ok(()) }
+    } else { resume_passive(&app) }
+}
+
+#[tauri::command]
+fn set_overlay_menu(app: AppHandle, open: bool) -> Result<(), String> {
+    let window = book_window(&app)?;
+    let corner = {
+        let mut state = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?;
+        state.menu_open = open;
+        state.hovered = open;
+        state.saved.rest_corner
+    };
+    if open {
+        window.set_size(LogicalSize::new(MENU_WIDTH, MENU_HEIGHT)).map_err(|e| e.to_string())?;
+        let (left, top, right, bottom, scale) = monitor_bounds(&app, &window, MENU_WIDTH, MENU_HEIGHT)?;
+        window.set_position(corner_position((left, top, right, bottom), corner, 16.0 * scale)).map_err(|e| e.to_string())?;
+        let _ = app.emit_to("overlay", "overlay-state", "menu");
+        Ok(())
+    } else { rest_book(&app) }
 }
 
 fn valid_time(time: &str) -> bool {
@@ -387,7 +455,7 @@ fn scheduler(app: AppHandle) {
             let mut impact = None;
             if let Ok(mut state) = shared.0.lock() {
                 let can_trigger = state.active.as_ref().is_none_or(|active| active.reminder_id.is_none());
-                if state.saved.bounce_enabled && can_trigger && check_schedules {
+                if can_trigger && check_schedules {
                     if let Some((id, due)) = &state.snooze {
                         if Instant::now() >= *due {
                             trigger = Some(Some(id.clone()));
@@ -499,6 +567,8 @@ pub fn run() {
             set_bounce_hovered,
             set_reminders,
             set_bounce_enabled,
+            set_rest_preferences,
+            set_overlay_menu,
             open_from_overlay,
             snooze_reminder,
             dismiss_reminder,
@@ -512,8 +582,8 @@ pub fn run() {
             let saved = load_settings(app.handle());
             app.manage(Shared(Mutex::new(Runtime::new(saved))));
             let open = MenuItem::with_id(app, "open", "Open LokBibleBounce", true, None::<&str>)?;
-            let pause = MenuItem::with_id(app, "pause", "Pause bouncing", true, None::<&str>)?;
-            let resume = MenuItem::with_id(app, "resume", "Resume bouncing", true, None::<&str>)?;
+            let pause = MenuItem::with_id(app, "pause", "Rest in corner", true, None::<&str>)?;
+            let resume = MenuItem::with_id(app, "resume", "Bounce now", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open, &pause, &resume, &quit])?;
             TrayIconBuilder::new()
@@ -531,32 +601,18 @@ pub fn run() {
                             let _ = main.set_focus();
                         }
                     }
-                    "pause" => { let _ = set_bounce_enabled(app.clone(), false); }
-                    "resume" => { let _ = set_bounce_enabled(app.clone(), true); }
+                    "pause" => { let _ = rest_book(app); }
+                    "resume" => { let _ = start_bounce(app, None); }
                     "quit" => app.exit(0),
                     _ => {}
                 })
                 .build(app)?;
             scheduler(app.handle().clone());
-            let bounce_enabled = app
-                .state::<Shared>()
-                .0
-                .lock()
-                .map(|state| state.saved.bounce_enabled)
-                .unwrap_or(false);
-            if bounce_enabled {
-                // Let the Windows webviews finish creating before showing and moving
-                // the transparent overlay. The reader stays available if this fails.
-                let handle = app.handle().clone();
-                thread::spawn(move || {
-                    thread::sleep(Duration::from_millis(350));
-                    if start_bounce(&handle, None).is_ok() {
-                        if let Some(main) = handle.get_webview_window("main") {
-                            let _ = main.hide();
-                        }
-                    }
-                });
-            }
+            let handle = app.handle().clone();
+            thread::spawn(move || {
+                thread::sleep(Duration::from_millis(350));
+                let _ = rest_book(&handle);
+            });
             Ok(())
         })
         .on_window_event(|window, event| {

@@ -2,10 +2,10 @@
 
 ## Architecture
 
-- Tauri 2 owns a reading window that starts hidden, a 170 × 170 transparent always-on-top book window that starts bouncing, a tray menu with pause/resume, and a Rust reminder loop. Clicking the book shows the reader; closing it resumes the passive bounce. Moving only the book window keeps other apps clickable outside its footprint.
+- Tauri 2 owns a reading window that starts hidden, a 170 × 170 transparent always-on-top book window that starts at rest in a selected corner, a tray menu with rest/bounce actions, and a Rust reminder loop. Clicking the book expands its compact options menu; only **Open Bible & read** shows the reader. Closing it returns the book to its resting mode. Moving only the book window keeps other apps clickable outside its footprint.
 - The reminder loop reads device-local schedules from app data at startup, deduplicates each reminder per local calendar day, supports ten-minute snooze, and quiets a due bounce after two minutes with a Windows notification. Closing the reader hides it to the tray; launch at Windows startup is an opt-in setting.
 - React handles the offline WEB/KJV reader, two-page Bible spread, chapter view, cover change, reminder editor, session timer, progress, and account UI. The Bible JSON comes from pinned eBible archives and is bundled in the installer. No verse request or paid API is needed at reading time. The overlay pauses on book hover and briefly compresses/tilts when the native movement loop reports an edge impact.
-- Guest preferences and history use webview local storage. Reminders and the bounce-enabled flag are copied to native app data for the background scheduler. Supabase access tokens use Windows Credential Manager. Optional signed-in history sync targets a user-owned `lok_bible_sessions` table in the shared LokBook project.
+- Guest preferences and history use webview local storage. Reminders, resting mode, and corner choice are copied to native app data for the background scheduler. Supabase access tokens use Windows Credential Manager. Optional signed-in history sync targets a user-owned `lok_bible_sessions` table in the shared LokBook project.
 
 ## Verified so far
 

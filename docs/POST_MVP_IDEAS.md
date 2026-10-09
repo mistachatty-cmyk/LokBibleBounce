@@ -27,6 +27,7 @@ The product rule remains: **help people read Scripture with respect, clarity, an
 | O-11 | Let users test a reminder and preview overlay placement from Settings. | Suggested | Keep the test from creating a real reading-session record. |
 | O-12 | Explore game-specific integrations where a conventional overlay cannot appear. | Suggested | Only use documented, allowed APIs; assess anti-cheat and maintenance cost. |
 | O-13 | Let the Bible react to desktop window edges or other user-chosen obstacles in addition to screen boundaries. | User | Detect obstacles locally without blocking other apps, jitter, unexpected movement, or collecting app-use history. |
+| O-14 | Add a dashboard-only resting mode. | User | Clarify whether “dashboard” means the Windows desktop when no other app is in front, or a LokBounce dashboard. Keep reminders and manual activation available in either case. |
 
 ## Scripture and reading
 

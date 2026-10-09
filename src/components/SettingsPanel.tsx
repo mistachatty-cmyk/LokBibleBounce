@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { desktop } from "../lib/native";
-import type { Translation } from "../types";
+import type { RestCorner, RestMode, Translation } from "../types";
 
 interface SettingsPanelProps {
   translation: Translation;
   reducedMotion: boolean;
   bounceEnabled: boolean;
+  restMode: RestMode;
+  restCorner: RestCorner;
   accountEmail: string | null;
   accountLoading: boolean;
   accountMessage: string;
@@ -14,6 +16,8 @@ interface SettingsPanelProps {
   onTranslation: (translation: Translation) => void;
   onReducedMotion: (enabled: boolean) => void;
   onBounceEnabled: (enabled: boolean) => void;
+  onRestMode: (mode: RestMode) => void;
+  onRestCorner: (corner: RestCorner) => void;
   onSignIn: (email: string) => Promise<void>;
   onSignOut: () => Promise<void>;
 }
@@ -60,7 +64,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
         <div className="panel settings-panel">
           <h3>Reading & appearance</h3>
           <label className="settings-row"><span><strong>Bible translation</strong><small>Cover and text change together</small></span><select value={props.translation} onChange={(event) => props.onTranslation(event.target.value as Translation)}><option value="web">World English Bible</option><option value="kjv">King James Version</option></select></label>
-          <label className="settings-row"><span><strong>Passive desktop bounce</strong><small>Keep the Bible moving while LokBounce is running</small></span><input type="checkbox" checked={props.bounceEnabled} onChange={(event) => props.onBounceEnabled(event.target.checked)} /></label>
+          <label className="settings-row"><span><strong>Resting Bible</strong><small>Where the Bible waits between reminders</small></span><select value={props.restMode} onChange={(event) => props.onRestMode(event.target.value as RestMode)}><option value="corner">In a screen corner</option><option value="off">Hidden until triggered</option></select></label>
+          <label className="settings-row"><span><strong>Resting corner</strong><small>The Bible stays still until you activate it</small></span><select value={props.restCorner} onChange={(event) => props.onRestCorner(event.target.value as RestCorner)}><option value="top-left">Top left</option><option value="top-right">Top right</option><option value="bottom-left">Bottom left</option><option value="bottom-right">Bottom right</option></select></label>
           <label className="settings-row"><span><strong>Reduce motion</strong><small>Use still transitions where possible</small></span><input type="checkbox" checked={props.reducedMotion} onChange={(event) => props.onReducedMotion(event.target.checked)} /></label>
           {desktop ? <label className="settings-row"><span><strong>Launch with Windows</strong><small>Start the Bible bounce when you sign in</small></span><input type="checkbox" checked={autostart} onChange={(event) => void toggleAutostart(event.target.checked)} /></label> : null}
         </div>
