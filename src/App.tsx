@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { User } from "@supabase/supabase-js";
 import { accountClient, installDesktopAuthCallback, sendSignInLink, signOut, syncReadingSessions } from "./lib/account";
 import { loadBible, randomReference, verseText } from "./lib/bible";
@@ -26,6 +27,8 @@ const navigation: { id: Tab; label: string; symbol: string }[] = [
   { id: "settings", label: "Settings", symbol: "⚙" },
 ];
 
+const opensAsDesktopReader = desktop && getCurrentWebviewWindow().label === "main";
+
 function nextReminder(reminders: AppState["reminders"]): string | null {
   const now = new Date();
   const enabled = reminders.filter((reminder) => reminder.enabled);
@@ -46,10 +49,10 @@ function nextReminder(reminders: AppState["reminders"]): string | null {
 
 export default function App() {
   const [state, setState] = useState<AppState>(loadState);
-  const [tab, setTab] = useState<Tab>(() => window.location.hash === "#reader" ? "read" : "home");
+  const [tab, setTab] = useState<Tab>(() => opensAsDesktopReader ? "read" : "home");
   const [bible, setBible] = useState<BibleData | null>(null);
   const [bibleError, setBibleError] = useState("");
-  const [reference, setReference] = useState<PassageRef | null>(() => window.location.hash === "#reader" ? null : state.lastReference);
+  const [reference, setReference] = useState<PassageRef | null>(() => opensAsDesktopReader ? null : state.lastReference);
   const [browserPreview, setBrowserPreview] = useState(false);
   const [notice, setNotice] = useState("");
   const [user, setUser] = useState<User | null>(null);

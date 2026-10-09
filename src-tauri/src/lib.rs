@@ -385,7 +385,7 @@ fn open_reader_window(app: &AppHandle) -> Result<(), String> {
         let _ = app.emit_to("main", "open-reader", ());
         return Ok(());
     }
-    let main = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html#reader".into()))
+    let main = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
         .title("LokBibleBounce")
         .inner_size(1120.0, 760.0)
         .min_inner_size(790.0, 540.0)
