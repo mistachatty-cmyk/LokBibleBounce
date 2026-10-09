@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{
-    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, State,
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
 };
@@ -154,7 +154,8 @@ fn corner_position(bounds: (f64, f64, f64, f64), corner: RestCorner, inset: f64)
 fn rest_book(app: &AppHandle) -> Result<(), String> {
     let window = book_window(app)?;
     let (mode, corner) = {
-        let mut state = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?;
+        let shared = app.state::<Shared>();
+        let mut state = shared.0.lock().map_err(|_| "Overlay state is unavailable")?;
         state.active = None;
         state.hovered = false;
         state.menu_open = false;
@@ -295,7 +296,8 @@ fn set_bounce_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
 #[tauri::command]
 fn set_rest_preferences(app: AppHandle, mode: RestMode, corner: RestCorner) -> Result<(), String> {
     let saved = {
-        let mut state = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?;
+        let shared = app.state::<Shared>();
+        let mut state = shared.0.lock().map_err(|_| "Overlay state is unavailable")?;
         state.saved.rest_mode = mode;
         state.saved.rest_corner = corner;
         state.saved.clone()
@@ -310,7 +312,8 @@ fn set_rest_preferences(app: AppHandle, mode: RestMode, corner: RestCorner) -> R
 fn set_overlay_menu(app: AppHandle, open: bool) -> Result<(), String> {
     let window = book_window(&app)?;
     let corner = {
-        let mut state = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?;
+        let shared = app.state::<Shared>();
+        let mut state = shared.0.lock().map_err(|_| "Overlay state is unavailable")?;
         state.menu_open = open;
         state.hovered = open;
         state.saved.rest_corner

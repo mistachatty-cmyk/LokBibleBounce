@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type { User } from "@supabase/supabase-js";
 import { accountClient, installDesktopAuthCallback, sendSignInLink, signOut, syncReadingSessions } from "./lib/account";
@@ -56,11 +56,15 @@ export default function App() {
   const [accountLoading, setAccountLoading] = useState(true);
   const [accountMessage, setAccountMessage] = useState("");
   const [syncMessage, setSyncMessage] = useState("");
+  const preferencesMounted = useRef(false);
 
   useEffect(() => { saveState(state); }, [state]);
   useEffect(() => { document.documentElement.classList.toggle("reduce-motion", state.reducedMotion); }, [state.reducedMotion]);
   useEffect(() => { void syncReminders(state.reminders).catch((error: unknown) => setNotice(String(error))); }, [state.reminders]);
-  useEffect(() => { void syncRestPreferences(state.restMode, state.restCorner).catch((error: unknown) => setNotice(String(error))); }, [state.restMode, state.restCorner]);
+  useEffect(() => {
+    if (!preferencesMounted.current) { preferencesMounted.current = true; return; }
+    void syncRestPreferences(state.restMode, state.restCorner).catch((error: unknown) => setNotice(String(error)));
+  }, [state.restMode, state.restCorner]);
 
   useEffect(() => {
     let active = true;
