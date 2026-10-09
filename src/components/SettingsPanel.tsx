@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { desktop } from "../lib/native";
-import type { RestCorner, RestMode, Translation } from "../types";
+import type { BookSize, RestCorner, RestMode, Translation } from "../types";
 
 interface SettingsPanelProps {
   translation: Translation;
@@ -9,6 +9,7 @@ interface SettingsPanelProps {
   bounceEnabled: boolean;
   restMode: RestMode;
   restCorner: RestCorner;
+  bookSize: BookSize;
   accountEmail: string | null;
   accountLoading: boolean;
   accountMessage: string;
@@ -18,6 +19,7 @@ interface SettingsPanelProps {
   onBounceEnabled: (enabled: boolean) => void;
   onRestMode: (mode: RestMode) => void;
   onRestCorner: (corner: RestCorner) => void;
+  onBookSize: (size: BookSize) => void;
   onSignIn: (email: string) => Promise<void>;
   onSignOut: () => Promise<void>;
 }
@@ -66,6 +68,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
           <label className="settings-row"><span><strong>Bible translation</strong><small>Cover and text change together</small></span><select value={props.translation} onChange={(event) => props.onTranslation(event.target.value as Translation)}><option value="web">World English Bible</option><option value="kjv">King James Version</option></select></label>
           <label className="settings-row"><span><strong>Resting Bible</strong><small>Where the Bible waits between reminders</small></span><select value={props.restMode} onChange={(event) => props.onRestMode(event.target.value as RestMode)}><option value="corner">In a screen corner</option><option value="off">Hidden until triggered</option></select></label>
           <label className="settings-row"><span><strong>Resting corner</strong><small>The Bible stays still until you activate it</small></span><select value={props.restCorner} onChange={(event) => props.onRestCorner(event.target.value as RestCorner)}><option value="top-left">Top left</option><option value="top-right">Top right</option><option value="bottom-left">Bottom left</option><option value="bottom-right">Bottom right</option></select></label>
+          <label className="settings-row"><span><strong>Bible size</strong><small>Adaptive follows your usable desktop; corners stay clear of the taskbar</small></span><select value={props.bookSize} onChange={(event) => props.onBookSize(event.target.value as BookSize)}><option value="adaptive">Adaptive (recommended)</option><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
           <label className="settings-row"><span><strong>Reduce motion</strong><small>Use still transitions where possible</small></span><input type="checkbox" checked={props.reducedMotion} onChange={(event) => props.onReducedMotion(event.target.checked)} /></label>
           {desktop ? <label className="settings-row"><span><strong>Launch with Windows</strong><small>Start the Bible bounce when you sign in</small></span><input type="checkbox" checked={autostart} onChange={(event) => void toggleAutostart(event.target.checked)} /></label> : null}
         </div>

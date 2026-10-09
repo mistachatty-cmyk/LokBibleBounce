@@ -63,8 +63,8 @@ export default function App() {
   useEffect(() => { void syncReminders(state.reminders).catch((error: unknown) => setNotice(String(error))); }, [state.reminders]);
   useEffect(() => {
     if (!preferencesMounted.current) { preferencesMounted.current = true; return; }
-    void syncRestPreferences(state.restMode, state.restCorner).catch((error: unknown) => setNotice(String(error)));
-  }, [state.restMode, state.restCorner]);
+    void syncRestPreferences(state.restMode, state.restCorner, state.bookSize).catch((error: unknown) => setNotice(String(error)));
+  }, [state.restMode, state.restCorner, state.bookSize]);
 
   useEffect(() => {
     let active = true;
@@ -220,7 +220,7 @@ export default function App() {
         {tab === "sessions" ? <SessionPanel session={state.activeSession} onStart={startSession} onPause={() => setState((current) => current.activeSession ? { ...current, activeSession: pauseSession(current.activeSession) } : current)} onResume={() => setState((current) => current.activeSession ? { ...current, activeSession: resumeSession(current.activeSession) } : current)} onFinish={saveSession} onRead={() => setTab("read")} /> : null}
         {tab === "reminders" ? <Reminders reminders={state.reminders} onChange={(reminders) => setState((current) => ({ ...current, reminders }))} onPreview={() => void previewBounce()} /> : null}
         {tab === "progress" ? <ProgressPanel sessions={state.sessions} /> : null}
-        {tab === "settings" ? <SettingsPanel translation={state.translation} reducedMotion={state.reducedMotion} bounceEnabled={state.bounceEnabled} restMode={state.restMode} restCorner={state.restCorner} accountEmail={user?.email ?? null} accountLoading={accountLoading} accountMessage={accountMessage} syncMessage={syncMessage} onTranslation={changeTranslation} onReducedMotion={(reducedMotion) => setState((current) => ({ ...current, reducedMotion }))} onBounceEnabled={(bounceEnabled) => setState((current) => ({ ...current, bounceEnabled }))} onRestMode={(restMode) => setState((current) => ({ ...current, restMode }))} onRestCorner={(restCorner) => setState((current) => ({ ...current, restCorner }))} onSignIn={async (email) => { await sendSignInLink(email); setAccountMessage("Check your email for a sign-in link, then return to LokBounce."); }} onSignOut={async () => { await signOut(); setAccountMessage("Signed out. Your local reminders remain available."); }} /> : null}
+        {tab === "settings" ? <SettingsPanel translation={state.translation} reducedMotion={state.reducedMotion} bounceEnabled={state.bounceEnabled} restMode={state.restMode} restCorner={state.restCorner} bookSize={state.bookSize} accountEmail={user?.email ?? null} accountLoading={accountLoading} accountMessage={accountMessage} syncMessage={syncMessage} onTranslation={changeTranslation} onReducedMotion={(reducedMotion) => setState((current) => ({ ...current, reducedMotion }))} onBounceEnabled={(bounceEnabled) => setState((current) => ({ ...current, bounceEnabled }))} onRestMode={(restMode) => setState((current) => ({ ...current, restMode }))} onRestCorner={(restCorner) => setState((current) => ({ ...current, restCorner }))} onBookSize={(bookSize) => setState((current) => ({ ...current, bookSize }))} onSignIn={async (email) => { await sendSignInLink(email); setAccountMessage("Check your email for a sign-in link, then return to LokBounce."); }} onSignOut={async () => { await signOut(); setAccountMessage("Signed out. Your local reminders remain available."); }} /> : null}
       </main>
 
       {browserPreview ? <BouncePreview translation={state.translation} reducedMotion={state.reducedMotion} onOpen={openRandomVerse} onDismiss={() => setBrowserPreview(false)} /> : null}

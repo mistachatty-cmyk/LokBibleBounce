@@ -1,5 +1,5 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
-import type { Reminder, RestCorner, RestMode } from "../types";
+import type { BookSize, Reminder, RestCorner, RestMode } from "../types";
 
 export const desktop = isTauri();
 
@@ -39,8 +39,12 @@ export async function setBounceHovered(hovered: boolean): Promise<void> {
   if (desktop) await invoke("set_bounce_hovered", { hovered });
 }
 
-export async function syncRestPreferences(mode: RestMode, corner: RestCorner): Promise<void> {
-  if (desktop) await invoke("set_rest_preferences", { mode, corner });
+export async function syncRestPreferences(mode: RestMode, corner: RestCorner, size: BookSize): Promise<void> {
+  if (desktop) await invoke("set_rest_preferences", { mode, corner, size });
+}
+
+export async function getBookScale(): Promise<number> {
+  return desktop ? invoke<number>("get_book_scale") : 1;
 }
 
 export async function setOverlayMenu(open: boolean): Promise<void> {

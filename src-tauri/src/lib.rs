@@ -18,7 +18,6 @@ use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_notification::NotificationExt;
 
 const BOOK_WIDTH: f64 = 170.0;
-const BOOK_HEIGHT: f64 = 170.0;
 const MENU_WIDTH: f64 = 270.0;
 const MENU_HEIGHT: f64 = 310.0;
 
@@ -29,6 +28,10 @@ enum RestMode { Corner, Off }
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 enum RestCorner { TopLeft, TopRight, BottomLeft, BottomRight }
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+enum BookSize { Adaptive, Small, Medium, Large }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -48,11 +51,14 @@ struct SavedSettings {
     rest_mode: RestMode,
     #[serde(default = "default_rest_corner")]
     rest_corner: RestCorner,
+    #[serde(default = "default_book_size")]
+    book_size: BookSize,
 }
 
 fn default_true() -> bool { true }
 fn default_rest_mode() -> RestMode { RestMode::Corner }
 fn default_rest_corner() -> RestCorner { RestCorner::BottomRight }
+fn default_book_size() -> BookSize { BookSize::Adaptive }
 
 impl Default for SavedSettings {
     fn default() -> Self {
@@ -61,6 +67,7 @@ impl Default for SavedSettings {
             bounce_enabled: true,
             rest_mode: RestMode::Corner,
             rest_corner: RestCorner::BottomRight,
+            book_size: BookSize::Adaptive,
         }
     }
 }
@@ -131,17 +138,47 @@ fn book_window(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
         .ok_or_else(|| "Bible overlay is unavailable".into())
 }
 
-fn monitor_bounds(app: &AppHandle, window: &tauri::WebviewWindow, width: f64, height: f64) -> Result<(f64, f64, f64, f64, f64), String> {
+fn book_size_logical(size: BookSize, work_width: f64, work_height: f64, scale: f64) -> f64 {
+    match size {
+        BookSize::Adaptive => ((work_height / scale) * 0.16).clamp(112.0, 220.0).min((work_width / scale * 0.25).max(96.0)),
+        BookSize::Small => 125.0,
+        BookSize::Medium => 170.0,
+        BookSize::Large => 220.0,
+    }
+}
+
+fn monitor_bounds(window: &tauri::WebviewWindow, width: f64, height: f64) -> Result<(f64, f64, f64, f64, f64), String> {
     let monitor = window.current_monitor().ok().flatten()
         .or_else(|| window.primary_monitor().ok().flatten())
         .ok_or_else(|| "No display was found".to_string())?;
     let scale = monitor.scale_factor();
-    let origin = monitor.position();
-    let size = monitor.size();
+    let work = monitor.work_area();
+    let origin = &work.position;
+    let size = &work.size;
     let left = origin.x as f64;
     let top = origin.y as f64;
-    let _ = app;
     Ok((left, top, (left + size.width as f64 - width * scale).max(left), (top + size.height as f64 - height * scale).max(top), scale))
+}
+
+fn book_dimensions(window: &tauri::WebviewWindow, size: BookSize) -> Result<f64, String> {
+    let monitor = window.current_monitor().ok().flatten()
+        .or_else(|| window.primary_monitor().ok().flatten())
+        .ok_or_else(|| "No display was found".to_string())?;
+    let work = monitor.work_area();
+    Ok(book_size_logical(size, work.size.width as f64, work.size.height as f64, monitor.scale_factor()))
+}
+
+fn resize_book(app: &AppHandle, window: &tauri::WebviewWindow, size: BookSize) -> Result<f64, String> {
+    let logical = book_dimensions(window, size)?;
+    window.set_size(LogicalSize::new(logical, logical)).map_err(|e| e.to_string())?;
+    let _ = app.emit_to("overlay", "book-scale", logical / BOOK_WIDTH);
+    Ok(logical)
+}
+
+#[tauri::command]
+fn get_book_scale(app: AppHandle) -> Result<f64, String> {
+    let size = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?.saved.book_size;
+    Ok(book_dimensions(&book_window(&app)?, size)? / BOOK_WIDTH)
 }
 
 fn corner_position(bounds: (f64, f64, f64, f64), corner: RestCorner, inset: f64) -> PhysicalPosition<i32> {
@@ -153,28 +190,27 @@ fn corner_position(bounds: (f64, f64, f64, f64), corner: RestCorner, inset: f64)
 
 fn rest_book(app: &AppHandle) -> Result<(), String> {
     let window = book_window(app)?;
-    let (mode, corner, was_menu_open) = {
+    let (mode, corner, size) = {
         let shared = app.state::<Shared>();
         let mut state = shared.0.lock().map_err(|_| "Overlay state is unavailable")?;
-        let was_menu_open = state.menu_open;
         state.active = None;
         state.hovered = false;
         state.menu_open = false;
-        (state.saved.rest_mode, state.saved.rest_corner, was_menu_open)
+        (state.saved.rest_mode, state.saved.rest_corner, state.saved.book_size)
     };
     let _ = app.emit_to("overlay", "overlay-state", "rest");
     if mode == RestMode::Off { return window.hide().map_err(|e| e.to_string()); }
-    if was_menu_open { window.set_size(LogicalSize::new(BOOK_WIDTH, BOOK_HEIGHT)).map_err(|e| e.to_string())?; }
-    let (left, top, right, bottom, scale) = monitor_bounds(app, &window, BOOK_WIDTH, BOOK_HEIGHT)?;
+    let logical = resize_book(app, &window, size)?;
+    let (left, top, right, bottom, scale) = monitor_bounds(&window, logical, logical)?;
     window.set_position(corner_position((left, top, right, bottom), corner, 16.0 * scale)).map_err(|e| e.to_string())?;
     window.show().map_err(|e| e.to_string())
 }
 
 fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), String> {
     let window = book_window(app)?;
-    let was_menu_open = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?.menu_open;
-    if was_menu_open { window.set_size(LogicalSize::new(BOOK_WIDTH, BOOK_HEIGHT)).map_err(|e| e.to_string())?; }
-    let (left, top, right, bottom, scale) = monitor_bounds(app, &window, BOOK_WIDTH, BOOK_HEIGHT)?;
+    let size = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?.saved.book_size;
+    let logical = resize_book(app, &window, size)?;
+    let (left, top, right, bottom, scale) = monitor_bounds(&window, logical, logical)?;
     let shared = app.state::<Shared>();
     let mut state = shared
         .0
@@ -296,12 +332,13 @@ fn set_bounce_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn set_rest_preferences(app: AppHandle, mode: RestMode, corner: RestCorner) -> Result<(), String> {
+fn set_rest_preferences(app: AppHandle, mode: RestMode, corner: RestCorner, size: BookSize) -> Result<(), String> {
     let saved = {
         let shared = app.state::<Shared>();
         let mut state = shared.0.lock().map_err(|_| "Overlay state is unavailable")?;
         state.saved.rest_mode = mode;
         state.saved.rest_corner = corner;
+        state.saved.book_size = size;
         state.saved.clone()
     };
     save_settings(&app, &saved)?;
@@ -322,7 +359,7 @@ fn set_overlay_menu(app: AppHandle, open: bool) -> Result<(), String> {
     };
     if open {
         window.set_size(LogicalSize::new(MENU_WIDTH, MENU_HEIGHT)).map_err(|e| e.to_string())?;
-        let (left, top, right, bottom, scale) = monitor_bounds(&app, &window, MENU_WIDTH, MENU_HEIGHT)?;
+        let (left, top, right, bottom, scale) = monitor_bounds(&window, MENU_WIDTH, MENU_HEIGHT)?;
         window.set_position(corner_position((left, top, right, bottom), corner, 16.0 * scale)).map_err(|e| e.to_string())?;
         let _ = app.emit_to("overlay", "overlay-state", "menu");
         Ok(())
@@ -581,6 +618,7 @@ pub fn run() {
             set_reminders,
             set_bounce_enabled,
             set_rest_preferences,
+            get_book_scale,
             set_overlay_menu,
             open_from_overlay,
             snooze_reminder,
@@ -646,7 +684,25 @@ pub fn run() {
 
 #[cfg(test)]
 mod motion_tests {
-    use super::advance_axis;
+    use super::{advance_axis, book_size_logical, corner_position, BookSize, RestCorner};
+    use tauri::PhysicalPosition;
+
+    #[test]
+    fn adaptive_book_size_follows_usable_height_and_respects_limits() {
+        assert_eq!(book_size_logical(BookSize::Adaptive, 1920.0, 1000.0, 1.0), 160.0);
+        assert_eq!(book_size_logical(BookSize::Adaptive, 1366.0, 700.0, 1.0), 112.0);
+        assert_eq!(book_size_logical(BookSize::Adaptive, 3840.0, 2000.0, 2.0), 160.0);
+        assert_eq!(book_size_logical(BookSize::Large, 1920.0, 1000.0, 1.0), 220.0);
+    }
+
+    #[test]
+    fn each_resting_corner_stays_inside_usable_bounds() {
+        let bounds = (10.0, 20.0, 850.0, 720.0);
+        assert_eq!(corner_position(bounds, RestCorner::TopLeft, 16.0), PhysicalPosition::new(26, 36));
+        assert_eq!(corner_position(bounds, RestCorner::TopRight, 16.0), PhysicalPosition::new(834, 36));
+        assert_eq!(corner_position(bounds, RestCorner::BottomLeft, 16.0), PhysicalPosition::new(26, 704));
+        assert_eq!(corner_position(bounds, RestCorner::BottomRight, 16.0), PhysicalPosition::new(834, 704));
+    }
 
     #[test]
     fn reflects_at_both_edges_without_sticking() {

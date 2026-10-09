@@ -1,6 +1,7 @@
 export type Translation = "web" | "kjv";
 export type RestMode = "corner" | "off";
 export type RestCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+export type BookSize = "adaptive" | "small" | "medium" | "large";
 export type Verse = [number, string];
 
 export interface BibleBook {
@@ -60,6 +61,7 @@ export interface AppState {
   bounceEnabled: boolean;
   restMode: RestMode;
   restCorner: RestCorner;
+  bookSize: BookSize;
   reducedMotion: boolean;
   lastReference: PassageRef | null;
 }

@@ -12,6 +12,7 @@ export const defaultState: AppState = {
   bounceEnabled: true,
   restMode: "corner",
   restCorner: "bottom-right",
+  bookSize: "adaptive",
   reducedMotion: false,
   lastReference: null,
 };
@@ -38,6 +39,7 @@ export function loadState(): AppState {
       bounceEnabled: parsed.bounceEnabled !== false,
       restMode: parsed.restMode === "off" ? "off" : "corner",
       restCorner: parsed.restCorner === "top-left" || parsed.restCorner === "top-right" || parsed.restCorner === "bottom-left" ? parsed.restCorner : "bottom-right",
+      bookSize: parsed.bookSize === "small" || parsed.bookSize === "medium" || parsed.bookSize === "large" ? parsed.bookSize : "adaptive",
       reducedMotion: parsed.reducedMotion === true,
       lastReference: parsed.lastReference ?? null,
     };

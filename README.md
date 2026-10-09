@@ -14,7 +14,7 @@
 
 The overlay may not appear over a genuine exclusive-fullscreen game. That remains an explicit future goal, with a notification fallback for the first release.
 
-The desktop companion can rest in a selected corner or stay hidden until a reminder or tray action triggers it. Use **Bounce now** in the book menu or tray to activate motion. **Launch with Windows** is optional in Settings. This is a desktop overlay, not a Windows idle `.scr` screensaver or lock-screen app; a separate idle screensaver mode is recorded in [post-MVP ideas](docs/POST_MVP_IDEAS.md).
+The desktop companion can rest in a selected corner or stay hidden until a reminder or tray action triggers it. Corners and bounce edges use the monitor's usable work area, keeping the Bible above the Windows taskbar. The default adaptive size follows the usable screen height; Small, Medium, and Large are available in Settings. Use **Bounce now** in the book menu or tray to activate motion. **Launch with Windows** is optional in Settings. This is a desktop overlay, not a Windows idle `.scr` screensaver or lock-screen app; a separate idle screensaver mode is recorded in [post-MVP ideas](docs/POST_MVP_IDEAS.md).
 
 ## Run locally
 

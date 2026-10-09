@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { BookMark } from "./components/BookMark";
-import { dismissReminder, isReminderBounce, openFromOverlay, setBounceHovered, setOverlayMenu, showBounce, snoozeReminder } from "./lib/native";
+import { dismissReminder, getBookScale, isReminderBounce, openFromOverlay, setBounceHovered, setOverlayMenu, showBounce, snoozeReminder } from "./lib/native";
 import { loadState } from "./lib/storage";
 import type { Translation } from "./types";
 
@@ -11,6 +11,7 @@ export default function Overlay() {
   const [impact, setImpact] = useState("");
   const [menu, setMenu] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [scale, setScale] = useState(1);
   const impactTimer = useRef<number | undefined>(undefined);
   useEffect(() => {
     const timer = window.setInterval(() => setTranslation(loadState().translation), 2000);
@@ -21,7 +22,9 @@ export default function Overlay() {
     let alive = true;
     const unlisten: Array<() => void> = [];
     void isReminderBounce().then((value) => { if (alive) setReminder(value); });
+    void getBookScale().then((value) => { if (alive) setScale(value); }).catch(() => {});
     void listen<boolean>("bounce-mode", ({ payload }) => { if (alive) setReminder(payload); }).then((remove) => unlisten.push(remove));
+    void listen<number>("book-scale", ({ payload }) => { if (alive) setScale(payload); }).then((remove) => unlisten.push(remove));
     void listen<string>("overlay-state", ({ payload }) => { if (alive) { setMenu(payload === "menu"); setMoving(payload === "bounce"); } }).then((remove) => unlisten.push(remove));
     void listen<string>("bounce-impact", ({ payload }) => {
       if (!alive || loadState().reducedMotion) return;
@@ -33,7 +36,7 @@ export default function Overlay() {
   }, []);
 
   return (
-    <div className={`overlay-stage ${reminder ? "reminder" : ""} ${menu ? "menu-open" : ""}`}>
+    <div className={`overlay-stage ${reminder ? "reminder" : ""} ${menu ? "menu-open" : ""}`} style={menu ? undefined : { transform: `scale(${scale})`, transformOrigin: "top left" }}>
       <button type="button" className={`overlay-book-button ${impact ? `impact-${impact}` : ""}`} aria-label="Bible options" onPointerEnter={() => void setBounceHovered(true)} onPointerLeave={() => void setBounceHovered(false)} onClick={() => void setOverlayMenu(true)}><BookMark translation={translation} size="small" /></button>
       {menu ? <div className="overlay-menu" aria-label="Bible options"><div className="overlay-menu-heading">A moment in the Word</div><button type="button" onClick={() => void openFromOverlay()}>Open Bible & read ↗</button><button type="button" onClick={() => void showBounce()}>Bounce now</button><button type="button" onClick={() => void setOverlayMenu(false)}>Rest in corner</button>{reminder ? <div className="overlay-menu-reminder"><button type="button" onClick={() => void snoozeReminder()}>Snooze</button><button type="button" onClick={() => void dismissReminder()}>Dismiss</button></div> : null}</div> : null}
       {reminder && !menu ? <div className="overlay-actions"><button type="button" onClick={() => void snoozeReminder()}>Snooze</button><button type="button" onClick={() => void dismissReminder()}>Dismiss</button></div> : null}
