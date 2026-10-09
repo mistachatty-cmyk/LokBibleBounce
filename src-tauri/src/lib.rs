@@ -614,7 +614,11 @@ pub fn run() {
             let handle = app.handle().clone();
             thread::spawn(move || {
                 thread::sleep(Duration::from_millis(350));
-                let _ = rest_book(&handle);
+                if rest_book(&handle).is_ok() {
+                    if let Some(main) = handle.get_webview_window("main") {
+                        let _ = main.hide();
+                    }
+                }
             });
             Ok(())
         })
