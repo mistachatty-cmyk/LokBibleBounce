@@ -147,7 +147,7 @@ fn book_size_logical(size: BookSize, work_width: f64, work_height: f64, scale: f
     }
 }
 
-fn monitor_bounds(window: &tauri::WebviewWindow, width: f64, height: f64) -> Result<(f64, f64, f64, f64, f64), String> {
+fn monitor_bounds(window: &tauri::WebviewWindow) -> Result<(f64, f64, f64, f64, f64), String> {
     let monitor = window.current_monitor().ok().flatten()
         .or_else(|| window.primary_monitor().ok().flatten())
         .ok_or_else(|| "No display was found".to_string())?;
@@ -155,9 +155,12 @@ fn monitor_bounds(window: &tauri::WebviewWindow, width: f64, height: f64) -> Res
     let work = monitor.work_area();
     let origin = &work.position;
     let size = &work.size;
+    // Windows can add non-client pixels even to a frameless webview. Use the
+    // measured outer size so no part of the overlay enters the taskbar.
+    let outer = window.outer_size().map_err(|e| e.to_string())?;
     let left = origin.x as f64;
     let top = origin.y as f64;
-    Ok((left, top, (left + size.width as f64 - width * scale).max(left), (top + size.height as f64 - height * scale).max(top), scale))
+    Ok((left, top, (left + size.width as f64 - outer.width as f64).max(left), (top + size.height as f64 - outer.height as f64).max(top), scale))
 }
 
 fn book_dimensions(window: &tauri::WebviewWindow, size: BookSize) -> Result<f64, String> {
@@ -200,8 +203,8 @@ fn rest_book(app: &AppHandle) -> Result<(), String> {
     };
     let _ = app.emit_to("overlay", "overlay-state", "rest");
     if mode == RestMode::Off { return window.hide().map_err(|e| e.to_string()); }
-    let logical = resize_book(app, &window, size)?;
-    let (left, top, right, bottom, scale) = monitor_bounds(&window, logical, logical)?;
+    resize_book(app, &window, size)?;
+    let (left, top, right, bottom, scale) = monitor_bounds(&window)?;
     window.set_position(corner_position((left, top, right, bottom), corner, 16.0 * scale)).map_err(|e| e.to_string())?;
     window.show().map_err(|e| e.to_string())
 }
@@ -209,8 +212,8 @@ fn rest_book(app: &AppHandle) -> Result<(), String> {
 fn start_bounce(app: &AppHandle, reminder_id: Option<String>) -> Result<(), String> {
     let window = book_window(app)?;
     let size = app.state::<Shared>().0.lock().map_err(|_| "Overlay state is unavailable")?.saved.book_size;
-    let logical = resize_book(app, &window, size)?;
-    let (left, top, right, bottom, scale) = monitor_bounds(&window, logical, logical)?;
+    resize_book(app, &window, size)?;
+    let (left, top, right, bottom, scale) = monitor_bounds(&window)?;
     let shared = app.state::<Shared>();
     let mut state = shared
         .0
@@ -359,7 +362,7 @@ fn set_overlay_menu(app: AppHandle, open: bool) -> Result<(), String> {
     };
     if open {
         window.set_size(LogicalSize::new(MENU_WIDTH, MENU_HEIGHT)).map_err(|e| e.to_string())?;
-        let (left, top, right, bottom, scale) = monitor_bounds(&window, MENU_WIDTH, MENU_HEIGHT)?;
+        let (left, top, right, bottom, scale) = monitor_bounds(&window)?;
         window.set_position(corner_position((left, top, right, bottom), corner, 16.0 * scale)).map_err(|e| e.to_string())?;
         let _ = app.emit_to("overlay", "overlay-state", "menu");
         Ok(())
