@@ -24,7 +24,7 @@ const MENU_HEIGHT: f64 = 310.0;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
-enum RestMode { Corner, Dashboard, Off }
+enum RestMode { Corner, Off }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]

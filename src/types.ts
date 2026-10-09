@@ -1,5 +1,5 @@
 export type Translation = "web" | "kjv";
-export type RestMode = "corner" | "dashboard" | "off";
+export type RestMode = "corner" | "off";
 export type RestCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type Verse = [number, string];
 
