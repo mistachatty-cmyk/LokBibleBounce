@@ -127,7 +127,7 @@ The user clarified that LokBounce must remain Bible-focused. Shared login belong
 | ID | Idea | Origin | What must be resolved before building |
 | --- | --- | --- | --- |
 | X-01 | Add automatic signed updates and a public release channel. | Suggested | Plan code-signing cost, rollback, and transparent release notes. |
-| X-02 | Add a mobile companion or browser extension. | Suggested | Keep desktop reminders authoritative and avoid duplicating sessions. |
+| X-02 | Add a mobile companion or browser extension. | Suggested | Chromium extension preview built: user-triggered page bounce and desktop launch. Store publication, wider browser support, and mobile remain to do. Keep desktop reminders authoritative and avoid duplicating sessions. |
 | X-03 | Provide account data export, full deletion, and local-only mode controls. | Suggested | Verify deletion across cached and synced records. |
 | X-04 | Make analytics and diagnostics opt-in, with no Bible-reading surveillance. | Suggested | Collect only what improves reliability and publish a clear privacy policy. |
 | X-05 | Publish an accessibility test matrix covering keyboard, screen reader, contrast, and reduced motion. | Suggested | Test on real Windows assistive tools. |

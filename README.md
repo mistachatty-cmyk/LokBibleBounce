@@ -2,7 +2,7 @@
 
 **LokBounce** is a Bible-focused Windows desktop companion. A small Bible rests in a chosen corner until you activate a bounce or a scheduled reminder brings it into motion. Click the book for its options, then choose **Open Bible & read** to see a random verse and its chapter.
 
-> **Status:** MVP implementation in progress. The web UI builds and its core data tests pass. The Windows installer and native overlay still require CI and hands-on Windows verification before a release.
+> **Status:** Windows preview build. The overlay and reader have been tested on a Windows desktop; reminder timing, mixed-monitor setups, and compatible games still need wider hands-on testing.
 
 ## Current MVP scope
 
@@ -13,6 +13,8 @@
 - Optional login using the existing LokBook Supabase identity; the Bible, reminders, and guest progress work offline.
 
 The overlay may not appear over a genuine exclusive-fullscreen game. That remains an explicit future goal, with a notification fallback for the first release.
+
+The optional [Chromium extension](extension/README.md) can show a page-only bouncing Bible and launch the installed app. The GSix download page lives at `https://gsix.online/lokbounce`. Connected apps can use `lokbounce://read` or `lokbounce://bounce`; see the [integration contract](docs/ECOSYSTEM_INTEGRATION.md).
 
 The desktop companion can rest in a selected corner or stay hidden until a reminder or tray action triggers it. Corners and bounce edges use the monitor's usable work area, keeping the Bible above the Windows taskbar. The default adaptive size follows the usable screen height; Small, Medium, and Large are available in Settings. Use **Bounce now** in the book menu or tray to activate motion. **Launch with Windows** is optional in Settings. This is a desktop overlay, not a Windows idle `.scr` screensaver or lock-screen app; a separate idle screensaver mode is recorded in [post-MVP ideas](docs/POST_MVP_IDEAS.md).
 

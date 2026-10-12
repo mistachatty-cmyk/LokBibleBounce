@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "LokBibleBounce Companion",
+  "version": "0.1.0",
+  "description": "Open the LokBounce desktop Bible or let a small Bible bounce on the current web page.",
+  "action": { "default_title": "LokBibleBounce", "default_popup": "popup.html" },
+  "permissions": ["activeTab", "scripting"]
+}

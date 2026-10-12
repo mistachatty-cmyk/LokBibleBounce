@@ -391,6 +391,23 @@ fn open_reader_window(app: &AppHandle) -> Result<(), String> {
     main.set_focus().map_err(|e| e.to_string())
 }
 
+fn launch_action(args: &[String]) -> Option<&'static str> {
+    args.iter().find_map(|arg| {
+        let url = arg.to_ascii_lowercase();
+        if url == "lokbounce://bounce" || url == "lokbounce://bounce/" { Some("bounce") }
+        else if url == "lokbounce://read" || url == "lokbounce://read/" || url.starts_with("lokbounce://auth/callback") { Some("read") }
+        else { None }
+    })
+}
+
+fn run_launch_action(app: &AppHandle, action: Option<&str>) {
+    match action {
+        Some("bounce") => { let _ = start_bounce(app, None); }
+        Some("read") => { let _ = stop_bounce(app); let _ = open_reader_window(app); }
+        _ => { let _ = open_reader_window(app); }
+    }
+}
+
 #[tauri::command]
 fn is_reader_open(app: AppHandle) -> bool {
     app.state::<Shared>().0.lock().map(|state| state.reader_open).unwrap_or(false)
@@ -606,8 +623,8 @@ fn scheduler(app: AppHandle) {
 pub fn run() {
     tauri::Builder::default()
         .manage(Shared(Mutex::new(Runtime::new(SavedSettings::default()))))
-        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            let _ = open_reader_window(app);
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            run_launch_action(app, launch_action(&argv));
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_notification::init())
@@ -670,6 +687,9 @@ pub fn run() {
             thread::spawn(move || {
                 thread::sleep(Duration::from_millis(350));
                 let _ = rest_book(&handle);
+                if let Some(action) = launch_action(&std::env::args().collect::<Vec<_>>()) {
+                    run_launch_action(&handle, Some(action));
+                }
             });
             Ok(())
         })
@@ -694,7 +714,7 @@ pub fn run() {
 
 #[cfg(test)]
 mod motion_tests {
-    use super::{advance_axis, book_size_logical, corner_position, BookSize, RestCorner};
+    use super::{advance_axis, book_size_logical, corner_position, launch_action, BookSize, RestCorner};
     use tauri::PhysicalPosition;
 
     #[test]
@@ -736,5 +756,15 @@ mod motion_tests {
 
         assert!(!advance_axis(&mut x, &mut velocity, 5.0, 5.0, 0.05));
         assert_eq!(x, 5.0);
+    }
+
+    #[test]
+    fn only_supported_deep_links_trigger_actions() {
+        let args = |url: &str| vec!["lokbiblebounce.exe".to_string(), url.to_string()];
+        assert_eq!(launch_action(&args("lokbounce://read")), Some("read"));
+        assert_eq!(launch_action(&args("lokbounce://bounce")), Some("bounce"));
+        assert_eq!(launch_action(&args("lokbounce://auth/callback?code=abc")), Some("read"));
+        assert_eq!(launch_action(&args("lokbounce://unknown")), None);
+        assert_eq!(launch_action(&args("https://gsix.online")), None);
     }
 }

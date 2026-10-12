@@ -7,3 +7,4 @@ src-tauri/target/
 .vite/
 coverage/
 *.log
+new-build-*/
