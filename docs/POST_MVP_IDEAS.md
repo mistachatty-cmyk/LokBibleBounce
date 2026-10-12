@@ -26,6 +26,8 @@ The product rule remains: **help people read Scripture with respect, clarity, an
 | O-10 | Add per-app and per-game quiet rules, including presentation mode. | Suggested | Detect foreground apps locally without uploading app-use history. |
 | O-11 | Let users test a reminder and preview overlay placement from Settings. | Suggested | Keep the test from creating a real reading-session record. |
 | O-12 | Explore game-specific integrations where a conventional overlay cannot appear. | Suggested | Only use documented, allowed APIs; assess anti-cheat and maintenance cost. |
+| O-13 | Let the Bible react to desktop window edges or other user-chosen obstacles in addition to screen boundaries. | User | Detect obstacles locally without blocking other apps, jitter, unexpected movement, or collecting app-use history. |
+| O-14 | Add a dashboard-only resting mode. | User | Clarify whether “dashboard” means the Windows desktop when no other app is in front, or a LokBounce dashboard. Keep reminders and manual activation available in either case. |
 
 ## Scripture and reading
 
@@ -118,14 +120,14 @@ The user clarified that LokBounce must remain Bible-focused. Shared login belong
 
 | Link | Supplied by | Notes |
 | --- | --- | --- |
-| [“Into Your Hands I Commit My Spirit” – Psalms of Surrender](https://www.youtube.com/watch?v=4rHDuAcuOuU) by Godseekers | User | Fun note: check out the prayer at [13:00](https://www.youtube.com/watch?v=4rHDuAcuOuU&t=780s) ❤️. First link for the future easter egg; verify availability and suitability again before release. |
+| [“Into Your Hands I Commit My Spirit” – Psalms of Surrender](https://www.youtube.com/watch?v=4rHDuAcuOuU) by Godseekers | User | Fun note: check out the prayer at [13:00](https://www.youtube.com/watch?v=4rHDuAcuOuU&t=780s) ❤️. User note for [30:00](https://www.youtube.com/watch?v=4rHDuAcuOuU&t=1800s): a point about having to fear God. First link for the future easter egg; verify availability and suitability again before release. |
 
 ## Distribution, accessibility, and trust
 
 | ID | Idea | Origin | What must be resolved before building |
 | --- | --- | --- | --- |
 | X-01 | Add automatic signed updates and a public release channel. | Suggested | Plan code-signing cost, rollback, and transparent release notes. |
-| X-02 | Add a mobile companion or browser extension. | Suggested | Keep desktop reminders authoritative and avoid duplicating sessions. |
+| X-02 | Add a mobile companion or browser extension. | Suggested | Chromium extension preview built: user-triggered page bounce and desktop launch. Store publication, wider browser support, and mobile remain to do. Keep desktop reminders authoritative and avoid duplicating sessions. |
 | X-03 | Provide account data export, full deletion, and local-only mode controls. | Suggested | Verify deletion across cached and synced records. |
 | X-04 | Make analytics and diagnostics opt-in, with no Bible-reading surveillance. | Suggested | Collect only what improves reliability and publish a clear privacy policy. |
 | X-05 | Publish an accessibility test matrix covering keyboard, screen reader, contrast, and reduced motion. | Suggested | Test on real Windows assistive tools. |

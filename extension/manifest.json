@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "LokServices Chrome Extension",
+  "version": "0.1.0",
+  "description": "A lightweight launcher for Lok and GSix, with an optional bouncing Bible on the current page.",
+  "action": { "default_title": "LokServices", "default_popup": "popup.html" },
+  "permissions": ["activeTab", "scripting"]
+}
