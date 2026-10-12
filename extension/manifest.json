@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "LokBibleBounce Companion",
+  "name": "LokServices Chrome Extension",
   "version": "0.1.0",
-  "description": "Open the LokBounce desktop Bible or let a small Bible bounce on the current web page.",
-  "action": { "default_title": "LokBibleBounce", "default_popup": "popup.html" },
+  "description": "A lightweight launcher for Lok and GSix, with an optional bouncing Bible on the current page.",
+  "action": { "default_title": "LokServices", "default_popup": "popup.html" },
   "permissions": ["activeTab", "scripting"]
 }
