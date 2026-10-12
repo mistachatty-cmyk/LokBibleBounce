@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{
-    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, WebviewUrl, WebviewWindowBuilder,
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
 };
@@ -82,6 +82,7 @@ struct Runtime {
     active: Option<ActiveBounce>,
     hovered: bool,
     menu_open: bool,
+    reader_open: bool,
     snooze: Option<(String, Instant)>,
     fired: HashSet<String>,
     x: f64,
@@ -98,6 +99,7 @@ impl Runtime {
             active: None,
             hovered: false,
             menu_open: false,
+            reader_open: false,
             snooze: None,
             fired: HashSet::new(),
             x: 0.0,
@@ -379,19 +381,19 @@ fn valid_time(time: &str) -> bool {
 }
 
 fn open_reader_window(app: &AppHandle) -> Result<(), String> {
-    if let Some(main) = app.get_webview_window("main") {
-        main.show().map_err(|e| e.to_string())?;
-        main.set_focus().map_err(|e| e.to_string())?;
-        let _ = app.emit_to("main", "open-reader", ());
-        return Ok(());
+    let main = app.get_webview_window("main").ok_or("Reading window is unavailable")?;
+    {
+        let shared = app.state::<Shared>();
+        shared.0.lock().map_err(|_| "Reader state is unavailable")?.reader_open = true;
     }
-    let main = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-        .title("LokBibleBounce")
-        .inner_size(1120.0, 760.0)
-        .min_inner_size(790.0, 540.0)
-        .build()
-        .map_err(|e| e.to_string())?;
+    main.show().map_err(|e| e.to_string())?;
+    let _ = app.emit_to("main", "open-reader", ());
     main.set_focus().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn is_reader_open(app: AppHandle) -> bool {
+    app.state::<Shared>().0.lock().map(|state| state.reader_open).unwrap_or(false)
 }
 
 #[tauri::command]
@@ -624,6 +626,7 @@ pub fn run() {
             get_book_scale,
             set_overlay_menu,
             open_from_overlay,
+            is_reader_open,
             snooze_reminder,
             dismiss_reminder,
             secure_get,
@@ -675,8 +678,12 @@ pub fn run() {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let handle = window.app_handle();
+                    {
+                        let shared = handle.state::<Shared>();
+                        if let Ok(mut state) = shared.0.lock() { state.reader_open = false; }
+                    }
+                    let _ = handle.emit_to("main", "close-reader", ());
                     let _ = window.hide();
-                    let _ = window.destroy();
                     let _ = resume_passive(&handle);
                 }
             }

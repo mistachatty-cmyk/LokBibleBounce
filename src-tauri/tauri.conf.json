@@ -12,6 +12,18 @@
   "app": {
     "windows": [
       {
+        "label": "main",
+        "url": "index.html#reader-shell",
+        "title": "LokBibleBounce",
+        "width": 1120,
+        "height": 760,
+        "minWidth": 790,
+        "minHeight": 540,
+        "resizable": true,
+        "visible": false,
+        "focus": false
+      },
+      {
         "label": "overlay",
         "url": "index.html#overlay",
         "width": 170,
